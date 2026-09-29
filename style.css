@@ -753,6 +753,9 @@ body {
     overflow: hidden;
     user-select: none;
     box-sizing: border-box;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: high-quality;
+    text-rendering: optimizeLegibility;
 }
 
 /* Universal dynamic field styling */
@@ -765,6 +768,7 @@ body {
     box-sizing: border-box;
     text-decoration: none; /* Never add unintended underlines */
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
 }
 

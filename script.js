@@ -323,12 +323,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Direct Canvas Fallback Renderer (Zero-Taint Guaranteed)
     // ------------------------------------------------------------------------
     async function renderCertificateDirectCanvas(data) {
+        const scale = 3; // 4800x2700 Ultra-HD 300+ DPI
         const width = CERTIFICATE_POSITIONS.canvas.width;
         const height = CERTIFICATE_POSITIONS.canvas.height;
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        const ctx = canvas.getContext('2d', { alpha: false });
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.scale(scale, scale);
 
         if (document.fonts && document.fonts.ready) {
             try { await document.fonts.ready; } catch(e) {}
@@ -447,13 +452,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 await new Promise(r => setTimeout(r, 10));
 
                 const canvas = await window.html2canvas(renderCertificate, {
-                    scale: 2.5,
+                    scale: 3, // 4800x2700 Ultra-HD 300+ DPI
                     useCORS: true,
                     allowTaint: false,
                     logging: false,
                     backgroundColor: '#ffffff',
                     width: CERTIFICATE_POSITIONS.canvas.width,
-                    height: CERTIFICATE_POSITIONS.canvas.height
+                    height: CERTIFICATE_POSITIONS.canvas.height,
+                    windowWidth: CERTIFICATE_POSITIONS.canvas.width,
+                    windowHeight: CERTIFICATE_POSITIONS.canvas.height,
+                    imageTimeout: 0
                 });
 
                 imgData = canvas.toDataURL('image/png', 1.0);
@@ -493,7 +501,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 compress: true
             });
 
-            pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'FAST');
+            // Lossless Slow Deflate compression for maximum vector/raster clarity
+            pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'SLOW');
 
             const filename = formatStudentFilename(currentCertificateData.name);
             const blob = pdf.output('blob');
@@ -1173,7 +1182,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     compress: true
                 });
 
-                pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'FAST');
+                // Lossless Slow Deflate compression for maximum vector/raster clarity
+                pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'SLOW');
                 const blob = pdf.output('blob');
 
                 // 5. Store generated PDF blob & cached preview image

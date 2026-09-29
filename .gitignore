@@ -9,7 +9,5 @@ Desktop.ini
 .idea/
 *.log
 
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
+# Scratch & test artifacts
+scratch/
