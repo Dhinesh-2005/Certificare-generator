@@ -4,16 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TEAMACY - Internship Certificate Generator</title>
-    <meta name="description" content="Official Teamacy Internship Certificate Generator for generating high-quality internship completion certificates.">
+    <meta name="description" content="Official Teamacy Internship Certificate Generator for generating high-quality internship completion certificates in single and bulk Excel modes.">
     <!-- Google Fonts for UI and Certificate fallback -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <!-- External stylesheet -->
     <link rel="stylesheet" href="style.css">
-    <!-- Libraries for PDF Generation (Local first, CDN fallback) -->
+    <!-- Offline first libraries with CDN fallbacks -->
     <script src="lib/html2canvas.min.js"></script>
+    <script>
+        if (typeof window.html2canvas === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
+        }
+    </script>
     <script src="lib/jspdf.umd.min.js"></script>
+    <script>
+        if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>');
+        }
+    </script>
+    <script src="lib/xlsx.full.min.js"></script>
+    <script>
+        if (typeof window.XLSX === 'undefined') {
+            document.write('<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"><\/script>');
+        }
+    </script>
+    <script src="lib/jszip.min.js"></script>
+    <script>
+        if (typeof window.JSZip === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>');
+        }
+    </script>
 </head>
 <body>
     <div class="app-wrapper">
@@ -39,193 +61,394 @@
                     <svg class="info-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                     </svg>
-                    <span>Enter the student details below and generate the official certificate.</span>
+                    <span>Enter student details manually or upload an Excel file for bulk generation.</span>
                 </div>
             </header>
 
-            <!-- Form Card -->
-            <section class="form-card" aria-label="Certificate Details Form">
-                <div class="card-header">
-                    <div class="card-title-group">
-                        <h2 class="card-title">Student Information</h2>
-                        <p class="card-subtitle">Fill in all 4 mandatory fields to produce the verified certificate.</p>
-                    </div>
-                    <button type="button" class="btn-demo" id="btnFillDemo" title="Load sample test data">
-                        <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
-                            <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/>
-                            <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/>
-                        </svg>
-                        Fill Sample Data
-                    </button>
-                </div>
-
-                <!-- Validation Alert -->
-                <div class="alert-box" id="alertBox" role="alert" style="display: none;">
-                    <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            <!-- Mode Switcher Tabs (Single vs Bulk) -->
+            <nav class="mode-tabs" role="tablist" aria-label="Certificate Generation Mode">
+                <button type="button" class="tab-btn active" id="tabBtnSingle" role="tab" aria-selected="true" aria-controls="singleModeSection">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                     </svg>
-                    <span id="alertMessage">Please fill in all certificate details.</span>
-                </div>
+                    <span>Single Certificate</span>
+                </button>
+                <button type="button" class="tab-btn" id="tabBtnBulk" role="tab" aria-selected="false" aria-controls="bulkModeSection">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+                    </svg>
+                    <span>Bulk Certificates</span>
+                    <span class="tab-badge">Excel / CSV</span>
+                </button>
+            </nav>
 
-                <form id="certificateForm" novalidate onsubmit="return false;">
-                    <div class="form-grid">
-                        <!-- Field 1: Intern Name -->
-                        <div class="form-group field-full">
-                            <label for="internName" class="form-label">
-                                <span>Intern Name</span>
-                                <span class="required-star">*</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                                </svg>
-                                <input type="text" id="internName" name="internName" class="form-input" placeholder="e.g. DHINESH P" autocomplete="off" required>
-                            </div>
-                            <span class="input-hint">Official student full name as displayed on the certificate.</span>
+            <!-- ========================================================== -->
+            <!-- TAB 1: SINGLE CERTIFICATE MODE                             -->
+            <!-- ========================================================== -->
+            <div id="singleModeSection" class="mode-section active" role="tabpanel" aria-labelledby="tabBtnSingle">
+                <!-- Form Card -->
+                <section class="form-card" aria-label="Certificate Details Form">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">Student Information</h2>
+                            <p class="card-subtitle">Fill in all 4 mandatory fields to produce the verified certificate.</p>
                         </div>
-
-                        <!-- Field 2: Domain / Program -->
-                        <div class="form-group field-full">
-                            <label for="domainProgram" class="form-label">
-                                <span>Domain / Program</span>
-                                <span class="required-star">*</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                                    <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                </svg>
-                                <input type="text" id="domainProgram" name="domainProgram" class="form-input" placeholder="e.g. Full Stack Web Development" autocomplete="off" required>
-                            </div>
-                            <span class="input-hint">Program or specialization completed during the internship.</span>
-                        </div>
-
-                        <!-- Field 3: Duration -->
-                        <div class="form-group">
-                            <label for="duration" class="form-label">
-                                <span>Duration</span>
-                                <span class="required-star">*</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
-                                </svg>
-                                <input type="text" id="duration" name="duration" class="form-input" placeholder="e.g. 01 June 2026 - 30 June 2026" autocomplete="off" required>
-                            </div>
-                            <span class="input-hint">Start date to end date range.</span>
-                        </div>
-
-                        <!-- Field 4: Certificate Number -->
-                        <div class="form-group">
-                            <label for="certificateNumber" class="form-label">
-                                <span>Certificate Number</span>
-                                <span class="required-star">*</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                                    <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                <input type="text" id="certificateNumber" name="certificateNumber" class="form-input" placeholder="e.g. TEAMACY-INT-2026-001" autocomplete="off" required>
-                            </div>
-                            <span class="input-hint">Unique alphanumeric certificate identifier.</span>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="button-toolbar">
-                        <button type="button" class="btn btn-primary" id="btnGenerate">
-                            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                        <button type="button" class="btn-demo" id="btnFillDemo" title="Load sample test data">
+                            <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+                                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"/>
+                                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"/>
                             </svg>
-                            <span>Generate Certificate</span>
-                        </button>
-
-                        <button type="button" class="btn btn-success" id="btnDownload">
-                            <svg class="download-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                            </svg>
-                            <span id="downloadBtnText">Download Certificate PDF</span>
-                        </button>
-
-                        <button type="button" class="btn btn-secondary" id="btnReset">
-                            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Reset</span>
+                            Fill Sample Data
                         </button>
                     </div>
 
-                    <!-- Direct Download Fallback Notice -->
-                    <div class="download-notice" id="downloadNotice" style="display: none;">
-                        <div class="download-notice-content">
-                            <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" width="22" height="22">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    <!-- Validation Alert -->
+                    <div class="alert-box" id="alertBox" role="alert" style="display: none;">
+                        <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span id="alertMessage">Please fill in all certificate details.</span>
+                    </div>
+
+                    <form id="certificateForm" novalidate onsubmit="return false;">
+                        <div class="form-grid">
+                            <!-- Field 1: Intern Name -->
+                            <div class="form-group field-full">
+                                <label for="internName" class="form-label">
+                                    <span>Intern Name</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <input type="text" id="internName" name="internName" class="form-input" placeholder="e.g. DHINESH P" autocomplete="off" required>
+                                </div>
+                                <span class="input-hint">Official student full name as displayed on the certificate.</span>
+                            </div>
+
+                            <!-- Field 2: Domain / Program -->
+                            <div class="form-group field-full">
+                                <label for="domainProgram" class="form-label">
+                                    <span>Domain / Program</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                        <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <input type="text" id="domainProgram" name="domainProgram" class="form-input" placeholder="e.g. Full Stack Web Development" autocomplete="off" required>
+                                </div>
+                                <span class="input-hint">Program or specialization completed during the internship.</span>
+                            </div>
+
+                            <!-- Field 3: Duration -->
+                            <div class="form-group">
+                                <label for="duration" class="form-label">
+                                    <span>Duration</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <input type="text" id="duration" name="duration" class="form-input" placeholder="e.g. 01 June 2026 - 30 June 2026" autocomplete="off" required>
+                                </div>
+                                <span class="input-hint">Start date to end date range.</span>
+                            </div>
+
+                            <!-- Field 4: Certificate Number -->
+                            <div class="form-group">
+                                <label for="certificateNumber" class="form-label">
+                                    <span>Certificate Number</span>
+                                    <span class="required-star">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <input type="text" id="certificateNumber" name="certificateNumber" class="form-input" placeholder="e.g. TEAMACY-INT-2026-001" autocomplete="off" required>
+                                </div>
+                                <span class="input-hint">Unique alphanumeric certificate identifier.</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="button-toolbar">
+                            <button type="button" class="btn btn-primary" id="btnGenerate">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Generate Certificate</span>
+                            </button>
+
+                            <button type="button" class="btn btn-success" id="btnDownload">
+                                <svg class="download-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                <span id="downloadBtnText">Download Certificate PDF</span>
+                            </button>
+
+                            <button type="button" class="btn btn-secondary" id="btnReset">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+
+                        <!-- Direct Download Fallback Notice -->
+                        <div class="download-notice" id="downloadNotice" style="display: none;">
+                            <div class="download-notice-content">
+                                <svg class="notice-icon" viewBox="0 0 20 20" fill="currentColor" width="22" height="22">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="notice-text">
+                                    <strong>Certificate PDF Ready!</strong>
+                                    <span>Download initiated. If the download didn't start automatically:</span>
+                                    <div class="notice-actions">
+                                        <a href="#" id="directDownloadLink" class="notice-btn-download">Click to Download PDF</a>
+                                        <a href="#" id="viewPdfLink" target="_blank" rel="noopener" class="notice-btn-view">Open PDF in New Tab</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Single Mode Preview Section -->
+                <section class="preview-section" id="previewSection" aria-label="Certificate Preview">
+                    <div class="preview-header">
+                        <div class="preview-title-group">
+                            <h2 class="preview-title">Certificate Live Preview</h2>
+                            <span class="preview-badge">Official 16:9 Master Template</span>
+                        </div>
+                        <div class="preview-meta" id="previewMeta">
+                            <span class="status-indicator ready"></span>
+                            <span class="status-label" id="statusLabel">Awaiting Generation</span>
+                        </div>
+                    </div>
+
+                    <!-- Empty Initial State Placeholder -->
+                    <div class="preview-empty-state" id="emptyPreviewPlaceholder">
+                        <div class="empty-icon-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
-                            <div class="notice-text">
-                                <strong>Certificate PDF Ready!</strong>
-                                <span>Download initiated. If the download didn't start automatically:</span>
-                                <div class="notice-actions">
-                                    <a href="#" id="directDownloadLink" class="notice-btn-download">Click to Download PDF</a>
-                                    <a href="#" id="viewPdfLink" target="_blank" rel="noopener" class="notice-btn-view">Open PDF in New Tab</a>
+                        </div>
+                        <h3 class="empty-title">No Certificate Preview Yet</h3>
+                        <p class="empty-desc">Enter the student information above and click <strong>Generate Certificate</strong> to render the official preview.</p>
+                    </div>
+
+                    <!-- Responsive Certificate Stage Container (MASTER RENDERING ENGINE) -->
+                    <div class="certificate-stage-wrapper" id="stageWrapper" style="display: none;">
+                        <div class="certificate-scaler" id="certificateScaler">
+                            <!-- MASTER CERTIFICATE ELEMENT (Used for both Single & Bulk Rendering) -->
+                            <div class="certificate" id="certificate">
+                                <!-- Dynamic Field 1: Intern Name -->
+                                <div class="dynamic-field cert-name" id="certInternName" aria-label="Intern Name">
+                                    DHINESH P
+                                </div>
+
+                                <!-- Dynamic Field 2: Domain / Program -->
+                                <div class="dynamic-field cert-domain" id="certDomain" aria-label="Domain or Program">
+                                    Full Stack Web Development
+                                </div>
+
+                                <!-- Dynamic Field 3: Duration -->
+                                <div class="dynamic-field cert-duration" id="certDuration" aria-label="Internship Duration">
+                                    01 June 2026 - 30 June 2026
+                                </div>
+
+                                <!-- Dynamic Field 4: Certificate Number -->
+                                <div class="dynamic-field cert-number" id="certNumber" aria-label="Certificate Number">
+                                    TEAMACY-INT-2026-001
                                 </div>
                             </div>
                         </div>
                     </div>
-                </form>
-            </section>
+                </section>
+            </div>
 
-            <!-- Preview Section -->
-            <section class="preview-section" id="previewSection" aria-label="Certificate Preview">
-                <div class="preview-header">
-                    <div class="preview-title-group">
-                        <h2 class="preview-title">Certificate Live Preview</h2>
-                        <span class="preview-badge">Official 16:9 Master Template</span>
+            <!-- ========================================================== -->
+            <!-- TAB 2: BULK CERTIFICATES MODE (EXCEL AUTOMATION)           -->
+            <!-- ========================================================== -->
+            <div id="bulkModeSection" class="mode-section" style="display: none;" role="tabpanel" aria-labelledby="tabBtnBulk">
+                <!-- Bulk Upload Card -->
+                <section class="form-card bulk-upload-card" aria-label="Bulk Certificate Upload">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">BULK CERTIFICATE GENERATOR</h2>
+                            <p class="card-subtitle">Upload an Excel (.xlsx, .xls) or CSV file to automatically generate certificates for every student.</p>
+                        </div>
+                        <button type="button" class="btn-demo btn-template-download" id="btnDownloadTemplate" title="Download sample Excel template">
+                            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Download Excel Template</span>
+                        </button>
                     </div>
-                    <div class="preview-meta" id="previewMeta">
-                        <span class="status-indicator ready"></span>
-                        <span class="status-label" id="statusLabel">Awaiting Generation</span>
-                    </div>
-                </div>
 
-                <!-- Empty Initial State Placeholder -->
-                <div class="preview-empty-state" id="emptyPreviewPlaceholder">
-                    <div class="empty-icon-wrap">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                    </div>
-                    <h3 class="empty-title">No Certificate Preview Yet</h3>
-                    <p class="empty-desc">Enter the student information above and click <strong>Generate Certificate</strong> to render the official preview.</p>
-                </div>
-
-                <!-- Responsive Certificate Stage Container -->
-                <div class="certificate-stage-wrapper" id="stageWrapper" style="display: none;">
-                    <div class="certificate-scaler" id="certificateScaler">
-                        <!-- MASTER CERTIFICATE ELEMENT (Used for both Preview and PDF Generation) -->
-                        <div class="certificate" id="certificate">
-                            <!-- Overlay Dynamic Field 1: Intern Name -->
-                            <div class="dynamic-field cert-name" id="certInternName" aria-label="Intern Name">
-                                DHINESH P
+                    <!-- Drag & Drop Upload Dropzone -->
+                    <div class="drop-zone" id="bulkDropZone">
+                        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;">
+                        <div class="drop-zone-content">
+                            <div class="drop-icon-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="44" height="44">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
                             </div>
-
-                            <!-- Overlay Dynamic Field 2: Domain / Program -->
-                            <div class="dynamic-field cert-domain" id="certDomain" aria-label="Domain or Program">
-                                Full Stack Web Development
-                            </div>
-
-                            <!-- Overlay Dynamic Field 3: Duration -->
-                            <div class="dynamic-field cert-duration" id="certDuration" aria-label="Internship Duration">
-                                01 June 2026 - 30 June 2026
-                            </div>
-
-                            <!-- Overlay Dynamic Field 4: Certificate Number -->
-                            <div class="dynamic-field cert-number" id="certNumber" aria-label="Certificate Number">
-                                TEAMACY-INT-2026-001
+                            <h3 class="drop-title">Upload Excel File</h3>
+                            <p class="drop-subtitle">Drag and drop your spreadsheet here, or browse from computer</p>
+                            <button type="button" class="btn btn-primary btn-choose-file" id="btnChooseFile">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Choose Excel File</span>
+                            </button>
+                            <div class="drop-specs">
+                                <div class="spec-pill"><strong>Supported formats:</strong> .xlsx, .xls, .csv</div>
+                                <div class="spec-pill"><strong>Expected columns:</strong> Name, Domain, Duration, Certificate Number</div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
+
+                    <!-- Active File Info Chip (shown after selection) -->
+                    <div class="file-chip" id="bulkFileChip" style="display: none;">
+                        <div class="file-chip-info">
+                            <div class="file-icon-box">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="22" height="22">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="file-chip-meta-group">
+                                <span class="file-chip-name" id="bulkFileName">data.xlsx</span>
+                                <span class="file-chip-meta" id="bulkFileMeta">14.2 KB</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-chip-remove" id="btnRemoveFile" title="Remove file and clear data">✕ Remove</button>
+                    </div>
+
+                    <!-- Bulk Validation Alert Box -->
+                    <div class="alert-box" id="bulkAlertBox" role="alert" style="display: none;">
+                        <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <div id="bulkAlertMessage" class="alert-content-wrap"></div>
+                    </div>
+                </section>
+
+                <!-- Bulk Table & Actions Card -->
+                <section class="form-card bulk-preview-card" id="bulkPreviewCard" style="display: none;" aria-label="Bulk Student Records">
+                    <!-- Stats Summary Cards -->
+                    <div class="stats-row">
+                        <div class="stat-card stat-total">
+                            <span class="stat-num" id="statTotalStudents">0</span>
+                            <span class="stat-label">Total Students</span>
+                        </div>
+                        <div class="stat-card stat-valid">
+                            <span class="stat-num" id="statValidCertificates">0</span>
+                            <span class="stat-label">Valid Certificates</span>
+                        </div>
+                        <div class="stat-card stat-errors">
+                            <span class="stat-num" id="statErrorRows">0</span>
+                            <span class="stat-label">Errors</span>
+                        </div>
+                    </div>
+
+                    <!-- Generation Progress Bar -->
+                    <div class="progress-section" id="bulkProgressSection" style="display: none;">
+                        <div class="progress-header">
+                            <div class="progress-info-group">
+                                <span class="progress-spinner"></span>
+                                <span class="progress-title" id="progressStatusText">Generating certificates... 0 / 0 completed</span>
+                            </div>
+                            <span class="progress-percent" id="progressPercentText">0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Table Toolbar -->
+                    <div class="table-toolbar">
+                        <div class="table-title-group">
+                            <h3 class="table-title">Student Records (<span id="tableRecordCount">0</span>)</h3>
+                            <span class="table-subtitle">Review rows before generating certificates</span>
+                        </div>
+                        <div class="table-actions">
+                            <button type="button" class="btn btn-primary" id="btnGenerateAll">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                <span id="generateAllBtnText">Generate All Certificates</span>
+                            </button>
+
+                            <button type="button" class="btn btn-success" id="btnDownloadAllZip" style="display: none;">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Download All Certificates (ZIP)</span>
+                            </button>
+
+                            <button type="button" class="btn btn-secondary" id="btnClearBatch">
+                                <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Clear / Start New Batch</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable Table -->
+                    <div class="table-responsive">
+                        <table class="bulk-table" id="bulkStudentTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Student Name</th>
+                                    <th>Domain / Program</th>
+                                    <th>Duration</th>
+                                    <th>Certificate No.</th>
+                                    <th style="width: 130px;">Status</th>
+                                    <th style="width: 210px; text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkStudentTableBody">
+                                <!-- Dynamically populated rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
         </main>
+
+        <!-- Modal: Certificate Preview for Individual Bulk Student -->
+        <div class="modal-overlay" id="previewModal" style="display: none;">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <h3 class="modal-title" id="modalStudentTitle">Certificate Preview</h3>
+                        <span class="modal-subtitle" id="modalStudentSubtitle">Official 16:9 Master Template</span>
+                    </div>
+                    <button type="button" class="modal-close-btn" id="btnModalClose" aria-label="Close modal">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-preview-stage" id="modalPreviewStage">
+                        <img id="modalPreviewImg" alt="Certificate Preview" style="width: 100%; height: auto; display: block; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnModalClose2">Close</button>
+                    <button type="button" class="btn btn-success" id="btnModalDownload">
+                        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Download PDF</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Footer -->
         <footer class="admin-footer">

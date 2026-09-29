@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TEAMACY OFFICIAL INTERNSHIP CERTIFICATE GENERATOR
- * Final Locked Master Implementation
+ * Final Locked Master Implementation with Single & Bulk Generation Modes
  * ============================================================================
  * Master Canvas: 1600px x 900px (16:9 Landscape Aspect Ratio)
  * All fixed elements (Logo, Heading, Borders, Wording, Signatures, QR Code)
@@ -27,7 +27,7 @@ const CERTIFICATE_POSITIONS = {
     },
     name: {
         x: '50%',              // Centered horizontally
-        y: '324px',            // Vertical baseline above college text
+        y: '324px',            // Vertical baseline above college text & pink ribbon
         maxWidth: 1000,        // Max width before auto-scaling
         baseFontSize: 47,      // 47px at 1600x900
         minFontSize: 28,
@@ -63,9 +63,44 @@ const CERTIFICATE_POSITIONS = {
     }
 };
 
+/**
+ * Standardize student certificate filename:
+ * - Prefix: inter-
+ * - Student Name only
+ * - Spaces converted to hyphens
+ * - Clean safe characters
+ * - Suffix -2, -3 for duplicates
+ */
+function formatStudentFilename(rawName, existingFilenames = new Set()) {
+    let clean = (rawName || 'Student')
+        .trim()
+        .replace(/[^a-zA-Z0-9\s_-]/g, '')
+        .replace(/\s+/g, '-');
+
+    if (!clean) clean = 'Student';
+
+    let base = `inter-${clean}`;
+    let filename = `${base}.pdf`;
+    let counter = 2;
+    while (existingFilenames.has(filename)) {
+        filename = `${base}-${counter}.pdf`;
+        counter++;
+    }
+    existingFilenames.add(filename);
+    return filename;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // ------------------------------------------------------------------------
-    // DOM Element References
+    // Tabs Navigation Elements
+    // ------------------------------------------------------------------------
+    const tabBtnSingle = document.getElementById('tabBtnSingle');
+    const tabBtnBulk = document.getElementById('tabBtnBulk');
+    const singleModeSection = document.getElementById('singleModeSection');
+    const bulkModeSection = document.getElementById('bulkModeSection');
+
+    // ------------------------------------------------------------------------
+    // Single Mode Form References
     // ------------------------------------------------------------------------
     const form = document.getElementById('certificateForm');
     const inputInternName = document.getElementById('internName');
@@ -98,14 +133,86 @@ document.addEventListener('DOMContentLoaded', () => {
     const certDuration = document.getElementById('certDuration');
     const certNumber = document.getElementById('certNumber');
 
-    // State
+    // Single Mode State
     let isCertificateGenerated = false;
     let currentCertificateData = null;
     let cachedPdfBlob = null;
     let cachedPdfUrl = null;
     let cachedFilename = '';
 
-    // Apply configuration positions and styles to DOM elements
+    // ------------------------------------------------------------------------
+    // Bulk Mode References
+    // ------------------------------------------------------------------------
+    const btnDownloadTemplate = document.getElementById('btnDownloadTemplate');
+    const bulkDropZone = document.getElementById('bulkDropZone');
+    const excelFileInput = document.getElementById('excelFileInput');
+    const btnChooseFile = document.getElementById('btnChooseFile');
+    const bulkFileChip = document.getElementById('bulkFileChip');
+    const bulkFileName = document.getElementById('bulkFileName');
+    const bulkFileMeta = document.getElementById('bulkFileMeta');
+    const btnRemoveFile = document.getElementById('btnRemoveFile');
+
+    const bulkAlertBox = document.getElementById('bulkAlertBox');
+    const bulkAlertMessage = document.getElementById('bulkAlertMessage');
+
+    const bulkPreviewCard = document.getElementById('bulkPreviewCard');
+    const statTotalStudents = document.getElementById('statTotalStudents');
+    const statValidCertificates = document.getElementById('statValidCertificates');
+    const statErrorRows = document.getElementById('statErrorRows');
+
+    const bulkProgressSection = document.getElementById('bulkProgressSection');
+    const progressStatusText = document.getElementById('progressStatusText');
+    const progressPercentText = document.getElementById('progressPercentText');
+    const progressBarFill = document.getElementById('progressBarFill');
+
+    const tableRecordCount = document.getElementById('tableRecordCount');
+    const btnGenerateAll = document.getElementById('btnGenerateAll');
+    const generateAllBtnText = document.getElementById('generateAllBtnText');
+    const btnDownloadAllZip = document.getElementById('btnDownloadAllZip');
+    const btnClearBatch = document.getElementById('btnClearBatch');
+    const bulkStudentTableBody = document.getElementById('bulkStudentTableBody');
+
+    // Modal References
+    const previewModal = document.getElementById('previewModal');
+    const modalStudentTitle = document.getElementById('modalStudentTitle');
+    const modalStudentSubtitle = document.getElementById('modalStudentSubtitle');
+    const modalPreviewImg = document.getElementById('modalPreviewImg');
+    const btnModalClose = document.getElementById('btnModalClose');
+    const btnModalClose2 = document.getElementById('btnModalClose2');
+    const btnModalDownload = document.getElementById('btnModalDownload');
+
+    // Bulk Mode State
+    let parsedStudents = [];
+    let isBulkGenerating = false;
+
+    // ------------------------------------------------------------------------
+    // Tab Switching
+    // ------------------------------------------------------------------------
+    function switchTab(mode) {
+        if (mode === 'single') {
+            tabBtnSingle.classList.add('active');
+            tabBtnSingle.setAttribute('aria-selected', 'true');
+            tabBtnBulk.classList.remove('active');
+            tabBtnBulk.setAttribute('aria-selected', 'false');
+            singleModeSection.style.display = 'flex';
+            bulkModeSection.style.display = 'none';
+            updateCertificateScale();
+        } else {
+            tabBtnBulk.classList.add('active');
+            tabBtnBulk.setAttribute('aria-selected', 'true');
+            tabBtnSingle.classList.remove('active');
+            tabBtnSingle.setAttribute('aria-selected', 'false');
+            bulkModeSection.style.display = 'flex';
+            singleModeSection.style.display = 'none';
+        }
+    }
+
+    tabBtnSingle.addEventListener('click', () => switchTab('single'));
+    tabBtnBulk.addEventListener('click', () => switchTab('bulk'));
+
+    // ------------------------------------------------------------------------
+    // Apply configuration positions and styles to master certificate DOM
+    // ------------------------------------------------------------------------
     function applyLockedPositions() {
         // Name
         certInternName.style.left = CERTIFICATE_POSITIONS.name.x;
@@ -144,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!stageWrapper || stageWrapper.style.display === 'none') return;
         
         const parent = stageWrapper.parentElement;
+        if (!parent) return;
         const computed = window.getComputedStyle(parent);
         const paddingLeft = parseFloat(computed.paddingLeft) || 0;
         const paddingRight = parseFloat(computed.paddingRight) || 0;
@@ -172,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ------------------------------------------------------------------------
-    // Validation Helper
+    // Validation Helper (Single Mode)
     // ------------------------------------------------------------------------
     function clearAlert() {
         alertBox.style.display = 'none';
@@ -199,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ------------------------------------------------------------------------
-    // Background High-Resolution PDF Builder
+    // Background High-Resolution PDF Builder (Single Mode)
     // ------------------------------------------------------------------------
     async function buildPdfDocument() {
         if (!currentCertificateData) return null;
@@ -209,9 +317,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!jsPDFClass) return null;
 
         try {
-            // Render unscaled master certificate DOM at scale: 2 (3200 x 1800 resolution)
+            // Render unscaled master certificate DOM at scale: 2.5
             const canvas = await window.html2canvas(certificate, {
-                scale: 2,
+                scale: 2.5,
                 useCORS: true,
                 allowTaint: false,
                 logging: false,
@@ -240,9 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'FAST');
 
-            const sanitizedName = currentCertificateData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const sanitizedCertNo = currentCertificateData.certNo.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const filename = `Teamacy_Certificate_${sanitizedName}_${sanitizedCertNo}.pdf`;
+            const filename = formatStudentFilename(currentCertificateData.name);
             const blob = pdf.output('blob');
 
             if (cachedPdfUrl) {
@@ -266,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ------------------------------------------------------------------------
-    // Certificate Generation
+    // Certificate Generation (Single Mode)
     // ------------------------------------------------------------------------
     function generateCertificate() {
         clearAlert();
@@ -363,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ------------------------------------------------------------------------
-    // High-Resolution PDF Download (Direct click + Fallback notice)
+    // High-Resolution PDF Download (Single Mode)
     // ------------------------------------------------------------------------
     async function downloadCertificatePDF() {
         clearAlert();
@@ -452,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnDownload.addEventListener('click', downloadCertificatePDF);
 
     // ------------------------------------------------------------------------
-    // Reset Button
+    // Reset Button (Single Mode)
     // ------------------------------------------------------------------------
     function resetForm() {
         form.reset();
@@ -489,9 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnReset.addEventListener('click', resetForm);
 
-    // ------------------------------------------------------------------------
     // Fill Demo Data Helper
-    // ------------------------------------------------------------------------
     btnFillDemo.addEventListener('click', () => {
         clearAlert();
         inputInternName.value = 'DHINESH P';
@@ -501,4 +605,656 @@ document.addEventListener('DOMContentLoaded', () => {
 
         generateCertificate();
     });
+
+    // ========================================================================
+    // BULK CERTIFICATE GENERATION LOGIC (EXCEL AUTOMATION)
+    // ========================================================================
+
+    // ------------------------------------------------------------------------
+    // Download Sample Excel Template
+    // ------------------------------------------------------------------------
+    function downloadExcelTemplate() {
+        if (typeof window.XLSX === 'undefined') {
+            showAlert('Excel engine is still loading. Please try again in a moment.');
+            return;
+        }
+
+        const templateData = [
+            ['Name', 'Domain', 'Duration', 'Certificate Number'],
+            ['DHINESH P', 'Full Stack Web Development', '01 June 2026 - 30 June 2026', 'TEAMACY-INT-2026-001'],
+            ['ARUN KUMAR', 'Python Development', '01 June 2026 - 30 June 2026', 'TEAMACY-INT-2026-002'],
+            ['PRIYA S', 'UI/UX Design', '01 June 2026 - 30 June 2026', 'TEAMACY-INT-2026-003']
+        ];
+
+        const worksheet = XLSX.utils.aoa_to_sheet(templateData);
+        worksheet['!cols'] = [
+            { wch: 20 },
+            { wch: 32 },
+            { wch: 32 },
+            { wch: 25 }
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Teamacy_Interns');
+        XLSX.writeFile(workbook, 'Teamacy_Internship_Template.xlsx');
+    }
+
+    btnDownloadTemplate.addEventListener('click', downloadExcelTemplate);
+
+    // ------------------------------------------------------------------------
+    // Drag & Drop / File Input Handling
+    // ------------------------------------------------------------------------
+    btnChooseFile.addEventListener('click', (e) => {
+        e.stopPropagation();
+        excelFileInput.click();
+    });
+
+    bulkDropZone.addEventListener('click', () => {
+        excelFileInput.click();
+    });
+
+    bulkDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        bulkDropZone.classList.add('drag-active');
+    });
+
+    bulkDropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        bulkDropZone.classList.remove('drag-active');
+    });
+
+    bulkDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        bulkDropZone.classList.remove('drag-active');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleUploadedFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    excelFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handleUploadedFile(e.target.files[0]);
+        }
+    });
+
+    btnRemoveFile.addEventListener('click', () => {
+        clearBulkBatch();
+    });
+
+    function showBulkAlert(message, isHtml = false) {
+        if (isHtml) {
+            bulkAlertMessage.innerHTML = message;
+        } else {
+            bulkAlertMessage.textContent = message;
+        }
+        bulkAlertBox.style.display = 'flex';
+        bulkAlertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearBulkAlert() {
+        bulkAlertBox.style.display = 'none';
+        bulkAlertMessage.innerHTML = '';
+    }
+
+    // ------------------------------------------------------------------------
+    // Excel Validation & Parsing
+    // ------------------------------------------------------------------------
+    function handleUploadedFile(file) {
+        clearBulkAlert();
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+            showBulkAlert('Unsupported file format. Please upload an Excel (.xlsx, .xls) or CSV file.');
+            return;
+        }
+
+        if (typeof window.XLSX === 'undefined') {
+            showBulkAlert('Excel processing engine is initializing. Please wait a few seconds and try again.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                    showBulkAlert('The uploaded spreadsheet contains no sheets.');
+                    return;
+                }
+
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+                if (!rawRows || rawRows.length < 2) {
+                    showBulkAlert('The uploaded spreadsheet contains no student data rows.');
+                    return;
+                }
+
+                // 1. Locate header row (first non-empty row)
+                let headerRowIndex = 0;
+                while (headerRowIndex < rawRows.length && rawRows[headerRowIndex].every(c => !String(c).trim())) {
+                    headerRowIndex++;
+                }
+
+                if (headerRowIndex >= rawRows.length) {
+                    showBulkAlert('Could not find header row in the uploaded spreadsheet.');
+                    return;
+                }
+
+                const headerRow = rawRows[headerRowIndex].map(h => String(h || '').trim());
+
+                // 2. Identify required columns (case-insensitive & trimmed)
+                let nameCol = -1, domainCol = -1, durationCol = -1, certNoCol = -1;
+                headerRow.forEach((col, idx) => {
+                    const norm = col.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (norm === 'name' || norm === 'internname' || norm === 'studentname') nameCol = idx;
+                    else if (norm === 'domain' || norm === 'program' || norm === 'domainprogram' || norm === 'internshipdomain') domainCol = idx;
+                    else if (norm === 'duration' || norm === 'period' || norm === 'dates' || norm === 'startdateenddate') durationCol = idx;
+                    else if (norm === 'certificatenumber' || norm === 'certificateno' || norm === 'certnumber' || norm === 'certno') certNoCol = idx;
+                });
+
+                // 3. Strict Header Validation
+                if (nameCol === -1 || domainCol === -1 || durationCol === -1 || certNoCol === -1) {
+                    showBulkAlert('Invalid Excel format. Required columns are:\nName, Domain, Duration, Certificate Number');
+                    return;
+                }
+
+                // 4. Parse Student Data Rows
+                parsedStudents = [];
+                const existingFilenames = new Set();
+                const rowErrors = [];
+
+                for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
+                    const row = rawRows[i];
+                    if (!row || row.every(cell => !String(cell).trim())) {
+                        continue; // Ignore completely empty rows
+                    }
+
+                    const actualRowNum = i + 1;
+                    const name = String(row[nameCol] || '').trim();
+                    const domain = String(row[domainCol] || '').trim();
+                    const duration = String(row[durationCol] || '').trim();
+                    const certNo = String(row[certNoCol] || '').trim();
+
+                    const missing = [];
+                    if (!name) missing.push('Name');
+                    if (!domain) missing.push('Domain');
+                    if (!duration) missing.push('Duration');
+                    if (!certNo) missing.push('Certificate Number');
+
+                    const filename = name ? formatStudentFilename(name, existingFilenames) : '';
+
+                    const student = {
+                        id: parsedStudents.length + 1,
+                        rowNum: actualRowNum,
+                        name,
+                        domain,
+                        duration,
+                        certNo,
+                        filename,
+                        status: missing.length === 0 ? 'ready' : 'error',
+                        errorMsg: missing.length > 0 ? `Row ${actualRowNum}: Missing ${missing.join(', ')}` : '',
+                        pdfBlob: null,
+                        pdfUrl: null,
+                        previewDataUrl: null
+                    };
+
+                    if (missing.length > 0) {
+                        rowErrors.push(student.errorMsg);
+                    }
+
+                    parsedStudents.push(student);
+                }
+
+                if (parsedStudents.length === 0) {
+                    showBulkAlert('No student data rows found in the uploaded file.');
+                    return;
+                }
+
+                // Update File Chip UI
+                bulkFileName.textContent = file.name;
+                bulkFileMeta.textContent = `${(file.size / 1024).toFixed(1)} KB • ${parsedStudents.length} rows detected`;
+                bulkFileChip.style.display = 'flex';
+                bulkDropZone.style.display = 'none';
+
+                // Display row-level errors if any exist without crashing
+                if (rowErrors.length > 0) {
+                    const errorSummary = `
+                        <strong>Some rows have missing information:</strong>
+                        ${rowErrors.slice(0, 5).map(err => `<div class="alert-row-error">• ${err}</div>`).join('')}
+                        ${rowErrors.length > 5 ? `<div class="alert-row-error">...and ${rowErrors.length - 5} more error rows.</div>` : ''}
+                    `;
+                    showBulkAlert(errorSummary, true);
+                }
+
+                // Render Preview Table and Stats
+                renderBulkTable();
+                bulkPreviewCard.style.display = 'block';
+                updateBulkStats();
+
+            } catch (err) {
+                console.error('Excel parse error:', err);
+                showBulkAlert('Error parsing Excel file. Please ensure it is a valid .xlsx, .xls, or .csv document.');
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    // ------------------------------------------------------------------------
+    // Render Bulk Student Table
+    // ------------------------------------------------------------------------
+    function renderBulkTable() {
+        bulkStudentTableBody.innerHTML = '';
+        tableRecordCount.textContent = parsedStudents.length;
+
+        parsedStudents.forEach((student, index) => {
+            const tr = document.createElement('tr');
+            tr.id = `bulk-row-${student.id}`;
+
+            let statusPill = '';
+            if (student.status === 'ready') {
+                statusPill = `<span class="status-pill ready">Ready</span>`;
+            } else if (student.status === 'processing') {
+                statusPill = `<span class="status-pill processing">Processing...</span>`;
+            } else if (student.status === 'generated') {
+                statusPill = `<span class="status-pill generated">Generated</span>`;
+            } else {
+                statusPill = `<span class="status-pill error" title="${student.errorMsg}">${student.errorMsg ? student.errorMsg : 'Error'}</span>`;
+            }
+
+            let actionHtml = '';
+            if (student.status === 'generated') {
+                actionHtml = `
+                    <div class="table-action-group">
+                        <button type="button" class="btn-row-action" onclick="window.previewBulkStudent(${student.id})" title="Preview certificate">
+                            Preview
+                        </button>
+                        <button type="button" class="btn-row-action btn-row-download" onclick="window.downloadBulkStudent(${student.id})" title="Download ${student.filename}">
+                            Download
+                        </button>
+                    </div>
+                `;
+            } else if (student.status === 'error') {
+                actionHtml = `
+                    <div class="table-action-group">
+                        <span style="font-size: 0.8rem; color: #dc2626;">Invalid row</span>
+                    </div>
+                `;
+            } else {
+                actionHtml = `
+                    <div class="table-action-group">
+                        <span style="font-size: 0.8rem; color: #64748b;">Awaiting generation</span>
+                    </div>
+                `;
+            }
+
+            tr.innerHTML = `
+                <td><strong>${index + 1}</strong></td>
+                <td><strong>${escapeHtml(student.name || '—')}</strong></td>
+                <td>${escapeHtml(student.domain || '—')}</td>
+                <td>${escapeHtml(student.duration || '—')}</td>
+                <td><code>${escapeHtml(student.certNo || '—')}</code></td>
+                <td>${statusPill}</td>
+                <td style="text-align: right;">${actionHtml}</td>
+            `;
+
+            bulkStudentTableBody.appendChild(tr);
+        });
+    }
+
+    function updateBulkStats() {
+        const total = parsedStudents.length;
+        const valid = parsedStudents.filter(s => s.status === 'ready' || s.status === 'generated').length;
+        const errors = parsedStudents.filter(s => s.status === 'error').length;
+
+        statTotalStudents.textContent = total;
+        statValidCertificates.textContent = valid;
+        statErrorRows.textContent = errors;
+
+        btnGenerateAll.disabled = valid === 0 || isBulkGenerating;
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function updateRowStatus(studentId, newStatus, pillText) {
+        const student = parsedStudents.find(s => s.id === studentId);
+        if (!student) return;
+        student.status = newStatus;
+
+        const tr = document.getElementById(`bulk-row-${studentId}`);
+        if (!tr) return;
+
+        const statusTd = tr.children[5];
+        const actionTd = tr.children[6];
+
+        if (statusTd) {
+            statusTd.innerHTML = `<span class="status-pill ${newStatus}">${pillText}</span>`;
+        }
+
+        if (actionTd) {
+            if (newStatus === 'generated') {
+                actionTd.innerHTML = `
+                    <div class="table-action-group">
+                        <button type="button" class="btn-row-action" onclick="window.previewBulkStudent(${student.id})" title="Preview certificate">
+                            Preview
+                        </button>
+                        <button type="button" class="btn-row-action btn-row-download" onclick="window.downloadBulkStudent(${student.id})" title="Download ${student.filename}">
+                            Download
+                        </button>
+                    </div>
+                `;
+            } else if (newStatus === 'error') {
+                actionTd.innerHTML = `
+                    <div class="table-action-group">
+                        <button type="button" class="btn-row-action btn-row-retry" onclick="window.retryBulkStudent(${student.id})">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            } else if (newStatus === 'processing') {
+                actionTd.innerHTML = `<span style="font-size:0.8rem; color:#2563eb;">Generating...</span>`;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Generate All Certificates (Sequential & Memory-Safe)
+    // ------------------------------------------------------------------------
+    async function generateAllCertificates() {
+        if (!parsedStudents || parsedStudents.length === 0 || isBulkGenerating) return;
+
+        const studentsToProcess = parsedStudents.filter(s => s.status === 'ready' || s.status === 'error_retry');
+        if (studentsToProcess.length === 0) {
+            showBulkAlert('No valid students available to generate certificates for.');
+            return;
+        }
+
+        isBulkGenerating = true;
+        btnGenerateAll.disabled = true;
+        generateAllBtnText.textContent = 'Generating Certificates...';
+        bulkProgressSection.style.display = 'flex';
+        btnDownloadAllZip.style.display = 'none';
+
+        let completed = 0;
+        let failed = 0;
+        const total = studentsToProcess.length;
+
+        // Ensure master certificate element is available in DOM for rendering
+        const originalStageDisplay = stageWrapper.style.display;
+        stageWrapper.style.display = 'block';
+
+        const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+
+        for (let i = 0; i < parsedStudents.length; i++) {
+            const student = parsedStudents[i];
+            if (student.status !== 'ready' && student.status !== 'error_retry') {
+                continue;
+            }
+
+            // Update Progress Bar
+            const percent = Math.round((completed / total) * 100);
+            progressPercentText.textContent = `${percent}%`;
+            progressBarFill.style.width = `${percent}%`;
+            progressStatusText.textContent = `Generating certificates... ${completed} / ${total} completed`;
+
+            updateRowStatus(student.id, 'processing', 'Generating...');
+
+            try {
+                // 1. Insert student data into master certificate
+                certInternName.textContent = student.name;
+                certDomain.textContent = student.domain;
+                certDuration.textContent = student.duration;
+                certNumber.textContent = student.certNo;
+
+                // 2. Intelligent Auto-scaling for long names and domains
+                fitTextElement(
+                    certInternName,
+                    CERTIFICATE_POSITIONS.name.baseFontSize,
+                    CERTIFICATE_POSITIONS.name.minFontSize,
+                    CERTIFICATE_POSITIONS.name.maxWidth
+                );
+                fitTextElement(
+                    certDomain,
+                    CERTIFICATE_POSITIONS.domain.baseFontSize,
+                    CERTIFICATE_POSITIONS.domain.minFontSize,
+                    CERTIFICATE_POSITIONS.domain.maxWidth
+                );
+                fitTextElement(
+                    certDuration,
+                    CERTIFICATE_POSITIONS.duration.baseFontSize,
+                    CERTIFICATE_POSITIONS.duration.minFontSize,
+                    CERTIFICATE_POSITIONS.duration.maxWidth
+                );
+                fitTextElement(
+                    certNumber,
+                    CERTIFICATE_POSITIONS.certificateNumber.baseFontSize,
+                    CERTIFICATE_POSITIONS.certificateNumber.minFontSize,
+                    CERTIFICATE_POSITIONS.certificateNumber.maxWidth
+                );
+
+                // Small tick for layout reflow
+                await new Promise(r => setTimeout(r, 15));
+
+                // 3. Render unscaled canvas using html2canvas (Scale: 2.5 for high-res crispness)
+                const canvas = await window.html2canvas(certificate, {
+                    scale: 2.5,
+                    useCORS: true,
+                    allowTaint: false,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    width: CERTIFICATE_POSITIONS.canvas.width,
+                    height: CERTIFICATE_POSITIONS.canvas.height,
+                    onclone: (clonedDoc) => {
+                        const clonedScaler = clonedDoc.getElementById('certificateScaler');
+                        if (clonedScaler) clonedScaler.style.transform = 'none';
+                        const clonedStage = clonedDoc.getElementById('stageWrapper');
+                        if (clonedStage) {
+                            clonedStage.style.width = `${CERTIFICATE_POSITIONS.canvas.width}px`;
+                            clonedStage.style.height = `${CERTIFICATE_POSITIONS.canvas.height}px`;
+                        }
+                    }
+                });
+
+                const imgData = canvas.toDataURL('image/png', 1.0);
+
+                // 4. Construct jsPDF instance (16:9 Landscape, zero margins)
+                const pdf = new jsPDFClass({
+                    orientation: 'landscape',
+                    unit: 'px',
+                    format: [CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height],
+                    hotfixes: ['px_scaling'],
+                    compress: true
+                });
+
+                pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'FAST');
+                const blob = pdf.output('blob');
+
+                // 5. Store generated PDF blob & cached preview image
+                if (student.pdfUrl) {
+                    URL.revokeObjectURL(student.pdfUrl);
+                }
+                student.pdfBlob = blob;
+                student.pdfUrl = URL.createObjectURL(blob);
+                student.previewDataUrl = imgData;
+
+                completed++;
+                updateRowStatus(student.id, 'generated', 'Generated');
+
+            } catch (err) {
+                console.error(`Error generating certificate for row ${student.rowNum} (${student.name}):`, err);
+                student.errorMsg = err.message || 'Generation failed';
+                failed++;
+                updateRowStatus(student.id, 'error', 'Failed');
+            }
+
+            // Yield control to keep browser completely responsive
+            await new Promise(r => setTimeout(r, 15));
+        }
+
+        // Restore master stage display
+        stageWrapper.style.display = originalStageDisplay;
+
+        // Completion state
+        const finalPercent = 100;
+        progressPercentText.textContent = `${finalPercent}%`;
+        progressBarFill.style.width = '100%';
+        progressStatusText.textContent = `${completed} certificate${completed === 1 ? '' : 's'} generated successfully.${failed > 0 ? ` (${failed} failed)` : ''}`;
+
+        isBulkGenerating = false;
+        btnGenerateAll.disabled = false;
+        generateAllBtnText.textContent = 'Re-generate All Certificates';
+
+        if (completed > 0) {
+            btnDownloadAllZip.style.display = 'inline-flex';
+        }
+
+        updateBulkStats();
+    }
+
+    btnGenerateAll.addEventListener('click', generateAllCertificates);
+
+    // ------------------------------------------------------------------------
+    // Individual Bulk Download & Preview Window Actions
+    // ------------------------------------------------------------------------
+    window.downloadBulkStudent = function(studentId) {
+        const student = parsedStudents.find(s => s.id === studentId);
+        if (!student || !student.pdfBlob || !student.pdfUrl) return;
+
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = student.pdfUrl;
+        link.download = student.filename;
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+            if (link.parentNode) link.parentNode.removeChild(link);
+        }, 1000);
+    };
+
+    window.previewBulkStudent = function(studentId) {
+        const student = parsedStudents.find(s => s.id === studentId);
+        if (!student || !student.previewDataUrl) return;
+
+        modalStudentTitle.textContent = `Certificate Preview — ${student.name}`;
+        modalStudentSubtitle.textContent = `${student.domain} • ${student.certNo} • ${student.filename}`;
+        modalPreviewImg.src = student.previewDataUrl;
+
+        btnModalDownload.onclick = () => {
+            window.downloadBulkStudent(student.id);
+        };
+
+        previewModal.style.display = 'flex';
+    };
+
+    window.retryBulkStudent = async function(studentId) {
+        const student = parsedStudents.find(s => s.id === studentId);
+        if (!student) return;
+        student.status = 'error_retry';
+        await generateAllCertificates();
+    };
+
+    // Modal Close
+    btnModalClose.addEventListener('click', () => { previewModal.style.display = 'none'; });
+    btnModalClose2.addEventListener('click', () => { previewModal.style.display = 'none'; });
+    previewModal.addEventListener('click', (e) => {
+        if (e.target === previewModal) previewModal.style.display = 'none';
+    });
+
+    // ------------------------------------------------------------------------
+    // Download All as ZIP (JSZip)
+    // ------------------------------------------------------------------------
+    async function downloadAllCertificatesZip() {
+        if (typeof window.JSZip === 'undefined') {
+            showBulkAlert('ZIP archiving engine is loading. Please wait a moment and try again.');
+            return;
+        }
+
+        const readyCertificates = parsedStudents.filter(s => s.status === 'generated' && s.pdfBlob);
+        if (readyCertificates.length === 0) {
+            showBulkAlert('No generated certificates available to package.');
+            return;
+        }
+
+        btnDownloadAllZip.disabled = true;
+        const originalBtnText = btnDownloadAllZip.innerHTML;
+        btnDownloadAllZip.innerHTML = '<span>Packaging ZIP Archive...</span>';
+
+        try {
+            const zip = new JSZip();
+            const folder = zip.folder('certificates');
+
+            readyCertificates.forEach(student => {
+                folder.file(student.filename, student.pdfBlob);
+            });
+
+            const zipBlob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            });
+
+            const zipUrl = URL.createObjectURL(zipBlob);
+            const link = document.createElement('a');
+            link.style.display = 'none';
+            link.href = zipUrl;
+            link.download = 'Teamacy_Internship_Certificates.zip';
+            document.body.appendChild(link);
+            link.click();
+
+            setTimeout(() => {
+                if (link.parentNode) link.parentNode.removeChild(link);
+                URL.revokeObjectURL(zipUrl);
+            }, 10000);
+
+        } catch (err) {
+            console.error('ZIP generation error:', err);
+            showBulkAlert('Failed to generate ZIP file: ' + err.message);
+        } finally {
+            btnDownloadAllZip.disabled = false;
+            btnDownloadAllZip.innerHTML = originalBtnText;
+        }
+    }
+
+    btnDownloadAllZip.addEventListener('click', downloadAllCertificatesZip);
+
+    // ------------------------------------------------------------------------
+    // Clear / Start New Batch
+    // ------------------------------------------------------------------------
+    function clearBulkBatch() {
+        if (parsedStudents) {
+            parsedStudents.forEach(s => {
+                if (s.pdfUrl) URL.revokeObjectURL(s.pdfUrl);
+            });
+        }
+        parsedStudents = [];
+        excelFileInput.value = '';
+        bulkFileChip.style.display = 'none';
+        bulkDropZone.style.display = 'block';
+        bulkPreviewCard.style.display = 'none';
+        bulkProgressSection.style.display = 'none';
+        btnDownloadAllZip.style.display = 'none';
+        clearBulkAlert();
+
+        statTotalStudents.textContent = '0';
+        statValidCertificates.textContent = '0';
+        statErrorRows.textContent = '0';
+        bulkStudentTableBody.innerHTML = '';
+        generateAllBtnText.textContent = 'Generate All Certificates';
+    }
+
+    btnClearBatch.addEventListener('click', clearBulkBatch);
 });
