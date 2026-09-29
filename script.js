@@ -133,6 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const certDuration = document.getElementById('certDuration');
     const certNumber = document.getElementById('certNumber');
 
+    // Apply zero-taint Base64 background if available (guarantees file:/// compatibility)
+    if (window.CERTIFICATE_BACKGROUND_BASE64 && certificate) {
+        certificate.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
+    }
+
     // Single Mode State
     let isCertificateGenerated = false;
     let currentCertificateData = null;
@@ -307,37 +312,135 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ------------------------------------------------------------------------
+    // Direct Canvas Fallback Renderer (Zero-Taint Guaranteed)
+    // ------------------------------------------------------------------------
+    async function renderCertificateDirectCanvas(data) {
+        const width = CERTIFICATE_POSITIONS.canvas.width;
+        const height = CERTIFICATE_POSITIONS.canvas.height;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const bgImg = new Image();
+        bgImg.src = window.CERTIFICATE_BACKGROUND_BASE64 || 'assets/certificate-background.png';
+        if (!bgImg.complete) {
+            await new Promise((resolve, reject) => {
+                bgImg.onload = resolve;
+                bgImg.onerror = reject;
+            });
+        }
+        ctx.drawImage(bgImg, 0, 0, width, height);
+
+        function drawFittedText({ text, x, y, maxWidth, baseSize, minSize, color, align = 'center' }) {
+            ctx.fillStyle = color;
+            ctx.textAlign = align;
+            ctx.textBaseline = 'alphabetic';
+
+            let size = baseSize;
+            while (size > minSize) {
+                ctx.font = `${size}px "CertificateTimes", "Times New Roman", Times, serif`;
+                if (ctx.measureText(text).width <= maxWidth) break;
+                size--;
+            }
+            ctx.font = `${size}px "CertificateTimes", "Times New Roman", Times, serif`;
+            ctx.fillText(text, x, y);
+        }
+
+        drawFittedText({
+            text: data.name,
+            x: 800,
+            y: 362,
+            maxWidth: CERTIFICATE_POSITIONS.name.maxWidth,
+            baseSize: CERTIFICATE_POSITIONS.name.baseFontSize,
+            minSize: CERTIFICATE_POSITIONS.name.minFontSize,
+            color: CERTIFICATE_POSITIONS.name.color
+        });
+
+        drawFittedText({
+            text: data.domain,
+            x: 800,
+            y: 508,
+            maxWidth: CERTIFICATE_POSITIONS.domain.maxWidth,
+            baseSize: CERTIFICATE_POSITIONS.domain.baseFontSize,
+            minSize: CERTIFICATE_POSITIONS.domain.minFontSize,
+            color: CERTIFICATE_POSITIONS.domain.color
+        });
+
+        drawFittedText({
+            text: data.duration,
+            x: 426,
+            y: 686,
+            maxWidth: CERTIFICATE_POSITIONS.duration.maxWidth,
+            baseSize: CERTIFICATE_POSITIONS.duration.baseFontSize,
+            minSize: CERTIFICATE_POSITIONS.duration.minFontSize,
+            color: CERTIFICATE_POSITIONS.duration.color
+        });
+
+        drawFittedText({
+            text: data.certNo,
+            x: 1130,
+            y: 682,
+            maxWidth: CERTIFICATE_POSITIONS.certificateNumber.maxWidth,
+            baseSize: CERTIFICATE_POSITIONS.certificateNumber.baseFontSize,
+            minSize: CERTIFICATE_POSITIONS.certificateNumber.minFontSize,
+            color: CERTIFICATE_POSITIONS.certificateNumber.color
+        });
+
+        return canvas;
+    }
+
+    // ------------------------------------------------------------------------
     // Background High-Resolution PDF Builder (Single Mode)
     // ------------------------------------------------------------------------
     async function buildPdfDocument() {
         if (!currentCertificateData) return null;
-        if (typeof window.html2canvas !== 'function') return null;
 
         const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
         if (!jsPDFClass) return null;
 
-        try {
-            // Render unscaled master certificate DOM at scale: 2.5
-            const canvas = await window.html2canvas(certificate, {
-                scale: 2.5,
-                useCORS: true,
-                allowTaint: false,
-                logging: false,
-                backgroundColor: '#ffffff',
-                width: CERTIFICATE_POSITIONS.canvas.width,
-                height: CERTIFICATE_POSITIONS.canvas.height,
-                onclone: (clonedDoc) => {
-                    const clonedScaler = clonedDoc.getElementById('certificateScaler');
-                    if (clonedScaler) clonedScaler.style.transform = 'none';
-                    const clonedStage = clonedDoc.getElementById('stageWrapper');
-                    if (clonedStage) {
-                        clonedStage.style.width = `${CERTIFICATE_POSITIONS.canvas.width}px`;
-                        clonedStage.style.height = `${CERTIFICATE_POSITIONS.canvas.height}px`;
-                    }
-                }
-            });
+        let imgData = null;
 
-            const imgData = canvas.toDataURL('image/png', 1.0);
+        try {
+            if (typeof window.html2canvas === 'function') {
+                const canvas = await window.html2canvas(certificate, {
+                    scale: 2.5,
+                    useCORS: true,
+                    allowTaint: false,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    width: CERTIFICATE_POSITIONS.canvas.width,
+                    height: CERTIFICATE_POSITIONS.canvas.height,
+                    onclone: (clonedDoc) => {
+                        const clonedCert = clonedDoc.getElementById('certificate');
+                        if (clonedCert && window.CERTIFICATE_BACKGROUND_BASE64) {
+                            clonedCert.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
+                        }
+                        const clonedScaler = clonedDoc.getElementById('certificateScaler');
+                        if (clonedScaler) clonedScaler.style.transform = 'none';
+                        const clonedStage = clonedDoc.getElementById('stageWrapper');
+                        if (clonedStage) {
+                            clonedStage.style.width = `${CERTIFICATE_POSITIONS.canvas.width}px`;
+                            clonedStage.style.height = `${CERTIFICATE_POSITIONS.canvas.height}px`;
+                        }
+                    }
+                });
+                imgData = canvas.toDataURL('image/png', 1.0);
+            } else {
+                throw new Error('html2canvas unavailable, using direct canvas fallback');
+            }
+        } catch (canvasErr) {
+            console.warn('html2canvas render issue, switching to direct canvas renderer:', canvasErr);
+            try {
+                const fallbackCanvas = await renderCertificateDirectCanvas(currentCertificateData);
+                imgData = fallbackCanvas.toDataURL('image/png', 1.0);
+            } catch (fallbackErr) {
+                console.error('Direct canvas fallback error:', fallbackErr);
+                return null;
+            }
+        }
+
+        try {
             const pdf = new jsPDFClass({
                 orientation: 'landscape',
                 unit: 'px',
@@ -1049,26 +1152,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 await new Promise(r => setTimeout(r, 15));
 
                 // 3. Render unscaled canvas using html2canvas (Scale: 2.5 for high-res crispness)
-                const canvas = await window.html2canvas(certificate, {
-                    scale: 2.5,
-                    useCORS: true,
-                    allowTaint: false,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    width: CERTIFICATE_POSITIONS.canvas.width,
-                    height: CERTIFICATE_POSITIONS.canvas.height,
-                    onclone: (clonedDoc) => {
-                        const clonedScaler = clonedDoc.getElementById('certificateScaler');
-                        if (clonedScaler) clonedScaler.style.transform = 'none';
-                        const clonedStage = clonedDoc.getElementById('stageWrapper');
-                        if (clonedStage) {
-                            clonedStage.style.width = `${CERTIFICATE_POSITIONS.canvas.width}px`;
-                            clonedStage.style.height = `${CERTIFICATE_POSITIONS.canvas.height}px`;
-                        }
+                let imgData = null;
+                try {
+                    if (typeof window.html2canvas === 'function') {
+                        const canvas = await window.html2canvas(certificate, {
+                            scale: 2.5,
+                            useCORS: true,
+                            allowTaint: false,
+                            logging: false,
+                            backgroundColor: '#ffffff',
+                            width: CERTIFICATE_POSITIONS.canvas.width,
+                            height: CERTIFICATE_POSITIONS.canvas.height,
+                            onclone: (clonedDoc) => {
+                                const clonedCert = clonedDoc.getElementById('certificate');
+                                if (clonedCert && window.CERTIFICATE_BACKGROUND_BASE64) {
+                                    clonedCert.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
+                                }
+                                const clonedScaler = clonedDoc.getElementById('certificateScaler');
+                                if (clonedScaler) clonedScaler.style.transform = 'none';
+                                const clonedStage = clonedDoc.getElementById('stageWrapper');
+                                if (clonedStage) {
+                                    clonedStage.style.width = `${CERTIFICATE_POSITIONS.canvas.width}px`;
+                                    clonedStage.style.height = `${CERTIFICATE_POSITIONS.canvas.height}px`;
+                                }
+                            }
+                        });
+                        imgData = canvas.toDataURL('image/png', 1.0);
+                    } else {
+                        throw new Error('html2canvas unavailable');
                     }
-                });
-
-                const imgData = canvas.toDataURL('image/png', 1.0);
+                } catch (canvasErr) {
+                    console.warn(`html2canvas failed on row ${student.rowNum}, falling back to direct canvas:`, canvasErr);
+                    const fallbackCanvas = await renderCertificateDirectCanvas(student);
+                    imgData = fallbackCanvas.toDataURL('image/png', 1.0);
+                }
 
                 // 4. Construct jsPDF instance (16:9 Landscape, zero margins)
                 const pdf = new jsPDFClass({
