@@ -425,6 +425,16 @@
             </div>
         </main>
 
+        <!-- Dedicated Off-Screen Master Certificate Rendering Container (Used for html2canvas to guarantee 1600x900 rendering in all modes) -->
+        <div id="masterRenderStage" style="position: fixed; left: -9999px; top: 0; width: 1600px; height: 900px; overflow: hidden; pointer-events: none; z-index: -9999;" aria-hidden="true">
+            <div class="certificate" id="renderCertificate" style="width: 1600px; height: 900px;">
+                <div class="dynamic-field cert-name" id="renderInternName" aria-label="Intern Name"></div>
+                <div class="dynamic-field cert-domain" id="renderDomain" aria-label="Domain or Program"></div>
+                <div class="dynamic-field cert-duration" id="renderDuration" aria-label="Internship Duration"></div>
+                <div class="dynamic-field cert-number" id="renderNumber" aria-label="Certificate Number"></div>
+            </div>
+        </div>
+
         <!-- Modal: Certificate Preview for Individual Bulk Student -->
         <div class="modal-overlay" id="previewModal" style="display: none;">
             <div class="modal-dialog">

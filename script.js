@@ -133,9 +133,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const certDuration = document.getElementById('certDuration');
     const certNumber = document.getElementById('certNumber');
 
+    // Dedicated Off-Screen Master Certificate Rendering Stage Elements
+    const renderCertificate = document.getElementById('renderCertificate');
+    const renderInternName = document.getElementById('renderInternName');
+    const renderDomain = document.getElementById('renderDomain');
+    const renderDuration = document.getElementById('renderDuration');
+    const renderNumber = document.getElementById('renderNumber');
+
     // Apply zero-taint Base64 background if available (guarantees file:/// compatibility)
-    if (window.CERTIFICATE_BACKGROUND_BASE64 && certificate) {
-        certificate.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
+    if (window.CERTIFICATE_BACKGROUND_BASE64) {
+        if (certificate) certificate.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
+        if (renderCertificate) renderCertificate.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
     }
 
     // Single Mode State
@@ -322,6 +330,10 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
 
+        if (document.fonts && document.fonts.ready) {
+            try { await document.fonts.ready; } catch(e) {}
+        }
+
         const bgImg = new Image();
         bgImg.src = window.CERTIFICATE_BACKGROUND_BASE64 || 'assets/certificate-background.png';
         if (!bgImg.complete) {
@@ -348,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         drawFittedText({
-            text: data.name,
+            text: data.name || '',
             x: 800,
             y: 362,
             maxWidth: CERTIFICATE_POSITIONS.name.maxWidth,
@@ -358,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         drawFittedText({
-            text: data.domain,
+            text: data.domain || '',
             x: 800,
             y: 508,
             maxWidth: CERTIFICATE_POSITIONS.domain.maxWidth,
@@ -368,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         drawFittedText({
-            text: data.duration,
+            text: data.duration || '',
             x: 426,
             y: 686,
             maxWidth: CERTIFICATE_POSITIONS.duration.maxWidth,
@@ -378,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         drawFittedText({
-            text: data.certNo,
+            text: data.certNo || data.certificateNumber || '',
             x: 1130,
             y: 682,
             maxWidth: CERTIFICATE_POSITIONS.certificateNumber.maxWidth,
@@ -390,6 +402,76 @@ document.addEventListener('DOMContentLoaded', () => {
         return canvas;
     }
 
+    /**
+     * Master Certificate Image Renderer
+     * Uses #renderCertificate in the dedicated off-screen stage (#masterRenderStage).
+     * Guaranteed 1600x900 resolution in all tabs (Single & Bulk modes).
+     * Automatic check ensures no empty/blank image is ever produced.
+     */
+    async function captureCertificateImage(data) {
+        let imgData = null;
+
+        try {
+            if (renderCertificate && typeof window.html2canvas === 'function') {
+                renderInternName.textContent = data.name || '';
+                renderDomain.textContent = data.domain || '';
+                renderDuration.textContent = data.duration || '';
+                renderNumber.textContent = data.certNo || data.certificateNumber || '';
+
+                fitTextElement(
+                    renderInternName,
+                    CERTIFICATE_POSITIONS.name.baseFontSize,
+                    CERTIFICATE_POSITIONS.name.minFontSize,
+                    CERTIFICATE_POSITIONS.name.maxWidth
+                );
+                fitTextElement(
+                    renderDomain,
+                    CERTIFICATE_POSITIONS.domain.baseFontSize,
+                    CERTIFICATE_POSITIONS.domain.minFontSize,
+                    CERTIFICATE_POSITIONS.domain.maxWidth
+                );
+                fitTextElement(
+                    renderDuration,
+                    CERTIFICATE_POSITIONS.duration.baseFontSize,
+                    CERTIFICATE_POSITIONS.duration.minFontSize,
+                    CERTIFICATE_POSITIONS.duration.maxWidth
+                );
+                fitTextElement(
+                    renderNumber,
+                    CERTIFICATE_POSITIONS.certificateNumber.baseFontSize,
+                    CERTIFICATE_POSITIONS.certificateNumber.minFontSize,
+                    CERTIFICATE_POSITIONS.certificateNumber.maxWidth
+                );
+
+                // Small tick to ensure reflow
+                await new Promise(r => setTimeout(r, 10));
+
+                const canvas = await window.html2canvas(renderCertificate, {
+                    scale: 2.5,
+                    useCORS: true,
+                    allowTaint: false,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    width: CERTIFICATE_POSITIONS.canvas.width,
+                    height: CERTIFICATE_POSITIONS.canvas.height
+                });
+
+                imgData = canvas.toDataURL('image/png', 1.0);
+            }
+        } catch (err) {
+            console.warn('html2canvas rendering notice:', err);
+        }
+
+        // Failsafe: if html2canvas threw or produced an empty/blank image (< 50,000 bytes)
+        if (!imgData || imgData.length < 50000) {
+            console.warn('html2canvas output empty or invalid, applying high-res direct canvas renderer');
+            const fallbackCanvas = await renderCertificateDirectCanvas(data);
+            imgData = fallbackCanvas.toDataURL('image/png', 1.0);
+        }
+
+        return imgData;
+    }
+
     // ------------------------------------------------------------------------
     // Background High-Resolution PDF Builder (Single Mode)
     // ------------------------------------------------------------------------
@@ -399,48 +481,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
         if (!jsPDFClass) return null;
 
-        let imgData = null;
-
         try {
-            if (typeof window.html2canvas === 'function') {
-                const canvas = await window.html2canvas(certificate, {
-                    scale: 2.5,
-                    useCORS: true,
-                    allowTaint: false,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    width: CERTIFICATE_POSITIONS.canvas.width,
-                    height: CERTIFICATE_POSITIONS.canvas.height,
-                    onclone: (clonedDoc) => {
-                        const clonedCert = clonedDoc.getElementById('certificate');
-                        if (clonedCert && window.CERTIFICATE_BACKGROUND_BASE64) {
-                            clonedCert.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
-                        }
-                        const clonedScaler = clonedDoc.getElementById('certificateScaler');
-                        if (clonedScaler) clonedScaler.style.transform = 'none';
-                        const clonedStage = clonedDoc.getElementById('stageWrapper');
-                        if (clonedStage) {
-                            clonedStage.style.width = `${CERTIFICATE_POSITIONS.canvas.width}px`;
-                            clonedStage.style.height = `${CERTIFICATE_POSITIONS.canvas.height}px`;
-                        }
-                    }
-                });
-                imgData = canvas.toDataURL('image/png', 1.0);
-            } else {
-                throw new Error('html2canvas unavailable, using direct canvas fallback');
-            }
-        } catch (canvasErr) {
-            console.warn('html2canvas render issue, switching to direct canvas renderer:', canvasErr);
-            try {
-                const fallbackCanvas = await renderCertificateDirectCanvas(currentCertificateData);
-                imgData = fallbackCanvas.toDataURL('image/png', 1.0);
-            } catch (fallbackErr) {
-                console.error('Direct canvas fallback error:', fallbackErr);
-                return null;
-            }
-        }
+            const imgData = await captureCertificateImage(currentCertificateData);
+            if (!imgData) throw new Error('Unable to capture certificate image');
 
-        try {
             const pdf = new jsPDFClass({
                 orientation: 'landscape',
                 unit: 'px',
@@ -1116,76 +1160,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateRowStatus(student.id, 'processing', 'Generating...');
 
             try {
-                // 1. Insert student data into master certificate
-                certInternName.textContent = student.name;
-                certDomain.textContent = student.domain;
-                certDuration.textContent = student.duration;
-                certNumber.textContent = student.certNo;
-
-                // 2. Intelligent Auto-scaling for long names and domains
-                fitTextElement(
-                    certInternName,
-                    CERTIFICATE_POSITIONS.name.baseFontSize,
-                    CERTIFICATE_POSITIONS.name.minFontSize,
-                    CERTIFICATE_POSITIONS.name.maxWidth
-                );
-                fitTextElement(
-                    certDomain,
-                    CERTIFICATE_POSITIONS.domain.baseFontSize,
-                    CERTIFICATE_POSITIONS.domain.minFontSize,
-                    CERTIFICATE_POSITIONS.domain.maxWidth
-                );
-                fitTextElement(
-                    certDuration,
-                    CERTIFICATE_POSITIONS.duration.baseFontSize,
-                    CERTIFICATE_POSITIONS.duration.minFontSize,
-                    CERTIFICATE_POSITIONS.duration.maxWidth
-                );
-                fitTextElement(
-                    certNumber,
-                    CERTIFICATE_POSITIONS.certificateNumber.baseFontSize,
-                    CERTIFICATE_POSITIONS.certificateNumber.minFontSize,
-                    CERTIFICATE_POSITIONS.certificateNumber.maxWidth
-                );
-
-                // Small tick for layout reflow
-                await new Promise(r => setTimeout(r, 15));
-
-                // 3. Render unscaled canvas using html2canvas (Scale: 2.5 for high-res crispness)
-                let imgData = null;
-                try {
-                    if (typeof window.html2canvas === 'function') {
-                        const canvas = await window.html2canvas(certificate, {
-                            scale: 2.5,
-                            useCORS: true,
-                            allowTaint: false,
-                            logging: false,
-                            backgroundColor: '#ffffff',
-                            width: CERTIFICATE_POSITIONS.canvas.width,
-                            height: CERTIFICATE_POSITIONS.canvas.height,
-                            onclone: (clonedDoc) => {
-                                const clonedCert = clonedDoc.getElementById('certificate');
-                                if (clonedCert && window.CERTIFICATE_BACKGROUND_BASE64) {
-                                    clonedCert.style.backgroundImage = `url("${window.CERTIFICATE_BACKGROUND_BASE64}")`;
-                                }
-                                const clonedScaler = clonedDoc.getElementById('certificateScaler');
-                                if (clonedScaler) clonedScaler.style.transform = 'none';
-                                const clonedStage = clonedDoc.getElementById('stageWrapper');
-                                if (clonedStage) {
-                                    clonedStage.style.width = `${CERTIFICATE_POSITIONS.canvas.width}px`;
-                                    clonedStage.style.height = `${CERTIFICATE_POSITIONS.canvas.height}px`;
-                                }
-                            }
-                        });
-                        imgData = canvas.toDataURL('image/png', 1.0);
-                    } else {
-                        throw new Error('html2canvas unavailable');
-                    }
-                } catch (canvasErr) {
-                    console.warn(`html2canvas failed on row ${student.rowNum}, falling back to direct canvas:`, canvasErr);
-                    const fallbackCanvas = await renderCertificateDirectCanvas(student);
-                    imgData = fallbackCanvas.toDataURL('image/png', 1.0);
-                }
+                // Render unscaled certificate using dedicated off-screen container + failsafe
+                const imgData = await captureCertificateImage(student);
+                if (!imgData) throw new Error('Unable to capture certificate image');
 
                 // 4. Construct jsPDF instance (16:9 Landscape, zero margins)
                 const pdf = new jsPDFClass({
