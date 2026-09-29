@@ -65,8 +65,8 @@ const CERTIFICATE_POSITIONS = {
 
 /**
  * Standardize student certificate filename:
- * - Prefix: inter-
- * - Student Name only
+ * - Prefix: Teamacy-
+ * - Student Name (e.g. Teamacy-Dhinesh.pdf, Teamacy-DHINESH-P.pdf)
  * - Spaces converted to hyphens
  * - Clean safe characters
  * - Suffix -2, -3 for duplicates
@@ -79,7 +79,7 @@ function formatStudentFilename(rawName, existingFilenames = new Set()) {
 
     if (!clean) clean = 'Student';
 
-    let base = `inter-${clean}`;
+    let base = `Teamacy-${clean}`;
     let filename = `${base}.pdf`;
     let counter = 2;
     while (existingFilenames.has(filename)) {
