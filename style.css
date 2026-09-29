@@ -1,0 +1,954 @@
+/* ==========================================================================
+   TEAMACY Internship Certificate Generator Stylesheet
+   Master 1600x900 Certificate Canvas & High-End Admin Interface
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Local Font Declarations
+   Loads genuine Times New Roman from assets/fonts for 100% vector typography match
+   -------------------------------------------------------------------------- */
+@font-face {
+    font-family: 'CertificateTimes';
+    src: local('Times New Roman'),
+         url('assets/fonts/times.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: 'CertificateTimes';
+    src: local('Times New Roman Bold'),
+         url('assets/fonts/timesbd.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: block;
+}
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties (Variables)
+   Master 1600x900 Certificate Placement Configuration
+   -------------------------------------------------------------------------- */
+:root {
+    /* Certificate Canvas Dimensions */
+    --cert-width: 1600px;
+    --cert-height: 900px;
+
+    /* NAME_POSITION: Centered horizontally, positioned above college text */
+    --name-left: 50%;
+    --name-top: 324px;
+    --name-font-size: 47px;
+    --name-color: #00004a;
+
+    /* DOMAIN_POSITION: Centered horizontally, visually belongs to paragraph */
+    --domain-left: 50%;
+    --domain-top: 480px;
+    --domain-font-size: 33px;
+    --domain-color: #00004a;
+
+    /* DURATION_POSITION: Aligned under DURATION heading */
+    --duration-left: 426px;
+    --duration-top: 668px;
+    --duration-font-size: 23px;
+    --duration-color: #000000;
+
+    /* CERTIFICATE_NUMBER_POSITION: Aligned under CERTIFICATE NO. heading */
+    --cert-number-left: 1130px;
+    --cert-number-top: 664px;
+    --cert-number-font-size: 23px;
+    --cert-number-color: #000000;
+
+    /* Teamacy Brand Theme Tokens */
+    --color-primary-navy: #00004a;
+    --color-navy-dark: #0a0e27;
+    --color-brand-blue: #2563eb;
+    --color-brand-indigo: #4f46e5;
+    --color-brand-purple: #7c3aed;
+    --color-brand-magenta: #db2777;
+    --color-brand-red: #e11d48;
+    
+    /* Neutral Surface & Typography Tokens */
+    --bg-page: #f8fafc;
+    --bg-card: rgba(255, 255, 255, 0.94);
+    --border-card: rgba(226, 232, 240, 0.85);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border-input: #cbd5e1;
+    --bg-input: #ffffff;
+
+    /* Shadow & Glass Tokens */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 74, 0.08), 0 8px 10px -6px rgba(0, 0, 74, 0.04);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-full: 9999px;
+
+    /* Transition */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Global Reset & Base
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-primary);
+    background-color: var(--bg-page);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    position: relative;
+    overflow-x: hidden;
+    padding-bottom: 40px;
+}
+
+/* --------------------------------------------------------------------------
+   Ambient Background Glows
+   -------------------------------------------------------------------------- */
+.ambient-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+}
+
+.glow-top-left {
+    top: -150px;
+    left: -150px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.2) 0%, rgba(124, 58, 237, 0.08) 70%, transparent 100%);
+}
+
+.glow-top-right {
+    top: -100px;
+    right: -100px;
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, rgba(219, 39, 119, 0.16) 0%, rgba(124, 58, 237, 0.06) 70%, transparent 100%);
+}
+
+.glow-bottom {
+    bottom: -150px;
+    left: 30%;
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.12) 0%, transparent 70%);
+}
+
+/* --------------------------------------------------------------------------
+   App Layout
+   -------------------------------------------------------------------------- */
+.app-wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px;
+}
+
+.main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+/* --------------------------------------------------------------------------
+   Header Section
+   -------------------------------------------------------------------------- */
+.admin-header {
+    text-align: center;
+    padding: 16px 0 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 6px 16px 6px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(8px);
+}
+
+.teamacy-brand-logo {
+    height: 30px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+}
+
+.portal-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-brand-blue);
+    background: rgba(37, 99, 235, 0.08);
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+}
+
+.portal-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.15;
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, var(--color-primary-navy) 0%, var(--color-brand-blue) 50%, var(--color-brand-magenta) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.6rem;
+    letter-spacing: 0.04em;
+    font-weight: 900;
+}
+
+.title-sub {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.portal-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.portal-note-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 8px 18px;
+    border-radius: var(--radius-full);
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.info-icon {
+    flex-shrink: 0;
+    color: #3b82f6;
+}
+
+/* --------------------------------------------------------------------------
+   Form Card
+   -------------------------------------------------------------------------- */
+.form-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    box-shadow: var(--shadow-xl);
+    backdrop-filter: blur(16px);
+    transition: box-shadow var(--transition-normal);
+}
+
+.form-card:hover {
+    box-shadow: 0 25px 35px -5px rgba(0, 0, 74, 0.1), 0 10px 12px -5px rgba(0, 0, 74, 0.05);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary-navy);
+}
+
+.card-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.btn-demo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-brand-indigo);
+    background: rgba(79, 70, 229, 0.07);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-demo:hover {
+    background: rgba(79, 70, 229, 0.14);
+    border-color: rgba(79, 70, 229, 0.35);
+    transform: translateY(-1px);
+}
+
+/* Alert Box */
+.alert-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    animation: alertShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes alertShake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+    40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+.alert-icon {
+    flex-shrink: 0;
+    color: #dc2626;
+}
+
+/* Grid layout */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px 24px;
+}
+
+.field-full {
+    grid-column: span 2;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.required-star {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color var(--transition-fast);
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    font-size: 0.96rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background-color: var(--bg-input);
+    border: 1.5px solid var(--border-input);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: var(--color-brand-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    background-color: #ffffff;
+}
+
+.form-input:focus + .input-icon,
+.input-wrapper:focus-within .input-icon {
+    color: var(--color-brand-blue);
+}
+
+.form-input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.form-input.input-error {
+    border-color: #ef4444;
+    background-color: #fffaf0;
+}
+
+.input-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Button Toolbar */
+.button-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: inherit;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+    user-select: none;
+}
+
+.btn svg {
+    flex-shrink: 0;
+}
+
+/* Primary Button: Generate */
+.btn-primary {
+    background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+    box-shadow: 0 6px 18px rgba(29, 78, 216, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Success Button: Download */
+.btn-success {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+.btn-success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-success:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Secondary Button: Reset */
+.btn-secondary {
+    background: #ffffff;
+    color: var(--text-secondary);
+    border: 1.5px solid #cbd5e1;
+    margin-left: auto;
+}
+
+.btn-secondary:hover {
+    background: #f1f5f9;
+    color: var(--text-primary);
+    border-color: #94a3b8;
+}
+
+/* --------------------------------------------------------------------------
+   Download Fallback Notice Banner
+   -------------------------------------------------------------------------- */
+.download-notice {
+    margin-top: 18px;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    animation: fadeInNotice 0.3s ease;
+}
+
+@keyframes fadeInNotice {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.download-notice-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    width: 100%;
+}
+
+.notice-icon {
+    color: #16a34a;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.notice-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.92rem;
+    color: #166534;
+}
+
+.notice-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.notice-btn-download, .notice-btn-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.notice-btn-download {
+    background: #16a34a;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+}
+
+.notice-btn-download:hover {
+    background: #15803d;
+    box-shadow: 0 4px 6px rgba(22, 163, 74, 0.3);
+}
+
+.notice-btn-view {
+    background: #ffffff;
+    color: #166534;
+    border: 1.5px solid #86efac;
+}
+
+.notice-btn-view:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+}
+
+/* --------------------------------------------------------------------------
+   Preview Section
+   -------------------------------------------------------------------------- */
+.preview-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    padding: 24px 30px;
+    box-shadow: var(--shadow-xl);
+    backdrop-filter: blur(16px);
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.preview-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.preview-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary-navy);
+}
+
+.preview-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    border: 1px solid #e2e8f0;
+}
+
+.preview-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.status-indicator {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #94a3b8;
+    display: inline-block;
+}
+
+.status-indicator.ready {
+    background: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.status-indicator.generating {
+    background: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    animation: pulseStatus 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseStatus {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+/* Empty State Placeholder */
+.preview-empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-md);
+    background: #f8fafc;
+}
+
+.empty-icon-wrap {
+    color: #94a3b8;
+    background: #e2e8f0;
+    padding: 16px;
+    border-radius: 50%;
+}
+
+.empty-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.empty-desc {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    max-width: 440px;
+    line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   Certificate Stage Container
+   Fixed 1600x900 virtual template scaled smoothly to fit any viewport
+   -------------------------------------------------------------------------- */
+.certificate-stage-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    overflow: hidden;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 74, 0.15), 0 0 0 1px rgba(0, 0, 74, 0.08);
+}
+
+.certificate-scaler {
+    width: 1600px;
+    height: 900px;
+    transform-origin: top left;
+}
+
+/* --------------------------------------------------------------------------
+   THE MASTER CERTIFICATE ELEMENT (1600x900 Canvas)
+   Uses the original certificate template as fixed background image.
+   Only the 4 dynamic fields are overlaid.
+   -------------------------------------------------------------------------- */
+.certificate {
+    position: relative;
+    width: var(--cert-width);
+    height: var(--cert-height);
+    background-color: #ffffff;
+    background-image: url('assets/certificate-background.png');
+    background-size: 1600px 900px;
+    background-position: center center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+/* Universal dynamic field styling */
+.dynamic-field {
+    position: absolute;
+    font-family: 'CertificateTimes', 'Times New Roman', Times, 'Liberation Serif', serif;
+    white-space: nowrap;
+    pointer-events: none;
+    line-height: 1.15;
+    box-sizing: border-box;
+    text-decoration: none; /* Never add unintended underlines */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* --------------------------------------------------------------------------
+   DYNAMIC FIELD 1 — INTERN NAME
+   Centered horizontally at 50%, top at 324px
+   -------------------------------------------------------------------------- */
+.cert-name {
+    left: var(--name-left);
+    top: var(--name-top);
+    transform: translateX(-50%);
+    color: var(--name-color);
+    font-size: var(--name-font-size);
+    font-weight: 400;
+    text-align: center;
+    max-width: 1050px;
+    letter-spacing: 0.2px;
+}
+
+/* --------------------------------------------------------------------------
+   DYNAMIC FIELD 2 — DOMAIN / PROGRAM
+   Centered horizontally at 50%, top at 480px
+   Visually belongs to the surrounding certificate sentence
+   -------------------------------------------------------------------------- */
+.cert-domain {
+    left: var(--domain-left);
+    top: var(--domain-top);
+    transform: translateX(-50%);
+    color: var(--domain-color);
+    font-size: var(--domain-font-size);
+    font-weight: 400;
+    text-align: center;
+    max-width: 1050px;
+    letter-spacing: 0.1px;
+}
+
+/* --------------------------------------------------------------------------
+   DYNAMIC FIELD 3 — DURATION
+   Centered directly below DURATION heading
+   -------------------------------------------------------------------------- */
+.cert-duration {
+    left: var(--duration-left);
+    top: var(--duration-top);
+    transform: translateX(-50%);
+    color: var(--duration-color);
+    font-size: var(--duration-font-size);
+    font-weight: 400;
+    text-align: center;
+    max-width: 500px;
+    letter-spacing: 0.1px;
+}
+
+/* --------------------------------------------------------------------------
+   DYNAMIC FIELD 4 — CERTIFICATE NUMBER
+   Centered directly below CERTIFICATE NO. heading
+   -------------------------------------------------------------------------- */
+.cert-number {
+    left: var(--cert-number-left);
+    top: var(--cert-number-top);
+    transform: translateX(-50%);
+    color: var(--cert-number-color);
+    font-size: var(--cert-number-font-size);
+    font-weight: 400;
+    text-align: center;
+    max-width: 500px;
+    letter-spacing: 0.1px;
+}
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+.admin-footer {
+    text-align: center;
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 0.84rem;
+    color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Breakpoints
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    .app-wrapper {
+        padding: 16px 12px;
+    }
+    .admin-header {
+        padding: 8px 0;
+        gap: 8px;
+    }
+    .brand-bar {
+        max-width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .portal-title {
+        font-size: 1.65rem;
+    }
+    .gradient-text {
+        font-size: 2rem;
+    }
+    .title-sub {
+        font-size: 1.15rem;
+    }
+    .portal-subtitle {
+        font-size: 0.92rem;
+    }
+    .portal-note-box {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        text-align: center;
+    }
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .btn-demo {
+        width: 100%;
+        justify-content: center;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .field-full {
+        grid-column: span 1;
+    }
+    .form-card {
+        padding: 18px 14px;
+    }
+    .preview-section {
+        padding: 18px 14px;
+    }
+    .preview-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .preview-title-group {
+        flex-wrap: wrap;
+    }
+    .button-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .btn-secondary {
+        margin-left: 0;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Print Style
+   -------------------------------------------------------------------------- */
+@media print {
+    body, html {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .ambient-glow, .admin-header, .form-card, .preview-header, .preview-empty-state, .admin-footer {
+        display: none !important;
+    }
+    .preview-section, .certificate-stage-wrapper {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .certificate-scaler {
+        transform: none !important;
+        width: 1600px !important;
+        height: 900px !important;
+    }
+    .certificate {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    @page {
+        size: 1600pt 900pt;
+        margin: 0;
+    }
+}
