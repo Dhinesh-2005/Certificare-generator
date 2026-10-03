@@ -6,7 +6,11 @@
  * Master Canvas: 1600px x 900px (16:9 Landscape Aspect Ratio)
  * All fixed elements (Logo, Heading, Borders, Wording, Signatures, QR Code)
  * are permanently locked in assets/certificate-background.png.
- * 
+ *
+ * PDF Output: A4 Landscape — 297mm × 210mm (841.89pt × 595.28pt)
+ * The 1600x900 canvas is captured at high-res, then proportionally scaled
+ * (maintaining 16:9 aspect ratio) and centered within the A4 page.
+ *
  * Only the four dynamic fields are overlaid:
  * 1. INTERN NAME
  * 2. DOMAIN / PROGRAM
@@ -19,6 +23,12 @@
 // SINGLE MASTER CONFIGURATION OBJECT
 // All future position adjustments must be made ONLY in this configuration.
 // ----------------------------------------------------------------------------
+// A4 Landscape PDF dimensions in mm (standard ISO 216)
+const A4_LANDSCAPE = {
+    widthMm: 297,
+    heightMm: 210
+};
+
 const CERTIFICATE_POSITIONS = {
     canvas: {
         width: 1600,
@@ -482,6 +492,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ------------------------------------------------------------------------
     // Background High-Resolution PDF Builder (Single Mode)
+    // Output: A4 Landscape (297mm × 210mm). The 16:9 certificate image is
+    // proportionally scaled to fit within A4 and centered (no distortion).
     // ------------------------------------------------------------------------
     async function buildPdfDocument() {
         if (!currentCertificateData) return null;
@@ -493,16 +505,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const imgData = await captureCertificateImage(currentCertificateData);
             if (!imgData) throw new Error('Unable to capture certificate image');
 
+            // A4 Landscape PDF page: 297mm wide × 210mm tall
             const pdf = new jsPDFClass({
                 orientation: 'landscape',
-                unit: 'px',
-                format: [CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height],
-                hotfixes: ['px_scaling'],
+                unit: 'mm',
+                format: 'a4',
                 compress: true
             });
 
+            const pageW = A4_LANDSCAPE.widthMm;   // 297
+            const pageH = A4_LANDSCAPE.heightMm;  // 210
+
+            // Proportionally fit the 16:9 certificate image within A4 (no stretch/crop)
+            const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
+            let imgW = pageW;
+            let imgH = pageW / certAspect;
+            if (imgH > pageH) {
+                imgH = pageH;
+                imgW = pageH * certAspect;
+            }
+            // Center within the A4 page
+            const x = (pageW - imgW) / 2;
+            const y = (pageH - imgH) / 2;
+
             // Lossless Slow Deflate compression for maximum vector/raster clarity
-            pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'SLOW');
+            pdf.addImage(imgData, 'PNG', x, y, imgW, imgH, undefined, 'SLOW');
 
             const filename = formatStudentFilename(currentCertificateData.name);
             const blob = pdf.output('blob');
@@ -1173,17 +1200,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imgData = await captureCertificateImage(student);
                 if (!imgData) throw new Error('Unable to capture certificate image');
 
-                // 4. Construct jsPDF instance (16:9 Landscape, zero margins)
+                // 4. Construct jsPDF instance — A4 Landscape (297mm × 210mm)
                 const pdf = new jsPDFClass({
                     orientation: 'landscape',
-                    unit: 'px',
-                    format: [CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height],
-                    hotfixes: ['px_scaling'],
+                    unit: 'mm',
+                    format: 'a4',
                     compress: true
                 });
 
+                // Proportionally fit the 16:9 certificate image within A4 (no stretch/crop)
+                const pageW = A4_LANDSCAPE.widthMm;   // 297
+                const pageH = A4_LANDSCAPE.heightMm;  // 210
+                const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
+                let imgW = pageW;
+                let imgH = pageW / certAspect;
+                if (imgH > pageH) {
+                    imgH = pageH;
+                    imgW = pageH * certAspect;
+                }
+                const imgX = (pageW - imgW) / 2;
+                const imgY = (pageH - imgH) / 2;
+
                 // Lossless Slow Deflate compression for maximum vector/raster clarity
-                pdf.addImage(imgData, 'PNG', 0, 0, CERTIFICATE_POSITIONS.canvas.width, CERTIFICATE_POSITIONS.canvas.height, undefined, 'SLOW');
+                pdf.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH, undefined, 'SLOW');
                 const blob = pdf.output('blob');
 
                 // 5. Store generated PDF blob & cached preview image
