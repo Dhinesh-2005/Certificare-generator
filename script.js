@@ -516,21 +516,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageW = A4_LANDSCAPE.widthMm;   // 297
             const pageH = A4_LANDSCAPE.heightMm;  // 210
 
-            // Scale to COVER the full A4 page — no white margins, no distortion.
-            // A4 landscape (1.414:1) is shorter than 16:9 (1.778:1), so scale by
-            // height to fill A4 completely; the extra width is centered and clipped
-            // by jsPDF at the page boundary.
+            // Scale to fit the full A4 WIDTH — zero left/right cropping, no distortion.
+            // 16:9 at 297mm wide → height = 297÷(16/9) ≈ 167mm.
+            // Centered vertically on the 210mm A4 page (≈21.5mm neutral space top & bottom —
+            // the minimum unavoidable gap when fitting 16:9 into A4 landscape proportionally).
             const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
-            let imgH = pageH;                  // fill full A4 height
-            let imgW = pageH * certAspect;     // 210 × (16/9) ≈ 373.3mm
-            if (imgW < pageW) {                // safety: if somehow not wide enough
-                imgW = pageW;
-                imgH = pageW / certAspect;
-            }
-            // Left-align the image — full left side (logo, border) stays visible.
-            // The 76mm excess width is clipped by jsPDF at the right page boundary.
-            const x = 0;                           // left edge of image = left edge of page
-            const y = (pageH - imgH) / 2;         // 0 when height-fitted
+            const imgW = pageW;              // 297mm — flush left & right, no side crop
+            const imgH = pageW / certAspect; // ≈ 167mm
+            const x = 0;                     // left edge flush with page left
+            const y = (pageH - imgH) / 2;   // ≈21.5mm — centers vertically
 
             // Lossless Slow Deflate compression for maximum vector/raster clarity
             pdf.addImage(imgData, 'PNG', x, y, imgW, imgH, undefined, 'SLOW');
@@ -1212,23 +1206,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     compress: true
                 });
 
-                // Scale to COVER the full A4 page — no white margins, no distortion.
-                // A4 landscape (1.414:1) is shorter than 16:9 (1.778:1), so scale by
-                // height to fill A4 completely; the extra width is centered and clipped
-                // by jsPDF at the page boundary.
+                // Scale to fit the full A4 WIDTH — zero left/right cropping, no distortion.
+                // 16:9 at 297mm wide → height = 297÷(16/9) ≈ 167mm.
+                // Centered vertically on the 210mm A4 page (≈21.5mm neutral space top & bottom —
+                // the minimum unavoidable gap when fitting 16:9 into A4 landscape proportionally).
                 const pageW = A4_LANDSCAPE.widthMm;   // 297
                 const pageH = A4_LANDSCAPE.heightMm;  // 210
                 const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
-                let imgH = pageH;                  // fill full A4 height
-                let imgW = pageH * certAspect;     // 210 × (16/9) ≈ 373.3mm
-                if (imgW < pageW) {                // safety: if somehow not wide enough
-                    imgW = pageW;
-                    imgH = pageW / certAspect;
-                }
-                // Left-align the image — full left side (logo, border) stays visible.
-                // The 76mm excess width is clipped by jsPDF at the right page boundary.
-                const imgX = 0;                        // left edge of image = left edge of page
-                const imgY = (pageH - imgH) / 2;      // 0 when height-fitted
+                const imgW = pageW;              // 297mm — flush left & right, no side crop
+                const imgH = pageW / certAspect; // ≈ 167mm
+                const imgX = 0;                  // left edge flush with page left
+                const imgY = (pageH - imgH) / 2; // ≈21.5mm — centers vertically
 
                 // Lossless Slow Deflate compression for maximum vector/raster clarity
                 pdf.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH, undefined, 'SLOW');
