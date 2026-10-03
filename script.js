@@ -1205,13 +1205,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     compress: true
                 });
 
-                // Scale to fit the full A4 WIDTH — zero left/right cropping, no distortion.
-                // 16:9 at 297mm wide → height = 297÷(16/9) ≈ 167mm.
-                // Centered vertically on the 210mm A4 page (≈21.5mm neutral space top & bottom —
-                // the minimum unavoidable gap when fitting 16:9 into A4 landscape proportionally).
+                // Fill the complete A4 page edge-to-edge: 297mm × 210mm.
                 const pageW = A4_LANDSCAPE.widthMm;   // 297
                 const pageH = A4_LANDSCAPE.heightMm;  // 210
-                // Fill the complete A4 page edge-to-edge: 297mm × 210mm.
+                //
                 // imgW = 297mm preserves the correct horizontal fit (both sides visible).
                 // imgH = 210mm fills the full A4 height, removing top/bottom white bands.
                 // x=0, y=0 — certificate flush with all four page edges.
