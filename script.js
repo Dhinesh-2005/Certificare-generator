@@ -516,15 +516,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageW = A4_LANDSCAPE.widthMm;   // 297
             const pageH = A4_LANDSCAPE.heightMm;  // 210
 
-            // Scale to fit the full A4 WIDTH — zero left/right cropping, no distortion.
-            // 16:9 at 297mm wide → height = 297÷(16/9) ≈ 167mm.
-            // Centered vertically on the 210mm A4 page (≈21.5mm neutral space top & bottom —
-            // the minimum unavoidable gap when fitting 16:9 into A4 landscape proportionally).
-            const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
-            const imgW = pageW;              // 297mm — flush left & right, no side crop
-            const imgH = pageW / certAspect; // ≈ 167mm
-            const x = 0;                     // left edge flush with page left
-            const y = (pageH - imgH) / 2;   // ≈21.5mm — centers vertically
+            // Fill the complete A4 page edge-to-edge: 297mm × 210mm.
+            // imgW = 297mm preserves the correct horizontal fit (both sides visible).
+            // imgH = 210mm fills the full A4 height, removing top/bottom white bands.
+            // x=0, y=0 — certificate flush with all four page edges.
+            const imgW = pageW;  // 297mm
+            const imgH = pageH;  // 210mm
+            const x = 0;
+            const y = 0;
 
             // Lossless Slow Deflate compression for maximum vector/raster clarity
             pdf.addImage(imgData, 'PNG', x, y, imgW, imgH, undefined, 'SLOW');
@@ -1212,11 +1211,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // the minimum unavoidable gap when fitting 16:9 into A4 landscape proportionally).
                 const pageW = A4_LANDSCAPE.widthMm;   // 297
                 const pageH = A4_LANDSCAPE.heightMm;  // 210
-                const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
-                const imgW = pageW;              // 297mm — flush left & right, no side crop
-                const imgH = pageW / certAspect; // ≈ 167mm
-                const imgX = 0;                  // left edge flush with page left
-                const imgY = (pageH - imgH) / 2; // ≈21.5mm — centers vertically
+                // Fill the complete A4 page edge-to-edge: 297mm × 210mm.
+                // imgW = 297mm preserves the correct horizontal fit (both sides visible).
+                // imgH = 210mm fills the full A4 height, removing top/bottom white bands.
+                // x=0, y=0 — certificate flush with all four page edges.
+                const imgW = pageW;  // 297mm
+                const imgH = pageH;  // 210mm
+                const imgX = 0;
+                const imgY = 0;
 
                 // Lossless Slow Deflate compression for maximum vector/raster clarity
                 pdf.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH, undefined, 'SLOW');
