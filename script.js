@@ -59,7 +59,7 @@ const CERTIFICATE_POSITIONS = {
         maxWidth: 450,         // Max width before auto-scaling
         baseFontSize: 23,      // 23px at 1600x900
         minFontSize: 16,
-        color: '#000000',
+        color: '#00004a',      // Same color as domain/name
         fontWeight: 'normal'
     },
     certificateNumber: {
@@ -68,7 +68,7 @@ const CERTIFICATE_POSITIONS = {
         maxWidth: 450,         // Max width before auto-scaling
         baseFontSize: 23,      // 23px at 1600x900
         minFontSize: 16,
-        color: '#000000',
+        color: '#00004a',      // Same color as domain/name
         fontWeight: 'normal'
     }
 };
