@@ -527,9 +527,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 imgW = pageW;
                 imgH = pageW / certAspect;
             }
-            // Center horizontally — excess crops equally from left and right
-            const x = (pageW - imgW) / 2;     // negative value → left crop
-            const y = (pageH - imgH) / 2;     // 0 when height-fitted
+            // Left-align the image — full left side (logo, border) stays visible.
+            // The 76mm excess width is clipped by jsPDF at the right page boundary.
+            const x = 0;                           // left edge of image = left edge of page
+            const y = (pageH - imgH) / 2;         // 0 when height-fitted
 
             // Lossless Slow Deflate compression for maximum vector/raster clarity
             pdf.addImage(imgData, 'PNG', x, y, imgW, imgH, undefined, 'SLOW');
@@ -1224,9 +1225,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     imgW = pageW;
                     imgH = pageW / certAspect;
                 }
-                // Center horizontally — excess crops equally from left and right
-                const imgX = (pageW - imgW) / 2;  // negative value → left crop
-                const imgY = (pageH - imgH) / 2;  // 0 when height-fitted
+                // Left-align the image — full left side (logo, border) stays visible.
+                // The 76mm excess width is clipped by jsPDF at the right page boundary.
+                const imgX = 0;                        // left edge of image = left edge of page
+                const imgY = (pageH - imgH) / 2;      // 0 when height-fitted
 
                 // Lossless Slow Deflate compression for maximum vector/raster clarity
                 pdf.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH, undefined, 'SLOW');
