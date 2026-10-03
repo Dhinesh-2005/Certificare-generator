@@ -516,17 +516,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageW = A4_LANDSCAPE.widthMm;   // 297
             const pageH = A4_LANDSCAPE.heightMm;  // 210
 
-            // Proportionally fit the 16:9 certificate image within A4 (no stretch/crop)
+            // Scale to COVER the full A4 page — no white margins, no distortion.
+            // A4 landscape (1.414:1) is shorter than 16:9 (1.778:1), so scale by
+            // height to fill A4 completely; the extra width is centered and clipped
+            // by jsPDF at the page boundary.
             const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
-            let imgW = pageW;
-            let imgH = pageW / certAspect;
-            if (imgH > pageH) {
-                imgH = pageH;
-                imgW = pageH * certAspect;
+            let imgH = pageH;                  // fill full A4 height
+            let imgW = pageH * certAspect;     // 210 × (16/9) ≈ 373.3mm
+            if (imgW < pageW) {                // safety: if somehow not wide enough
+                imgW = pageW;
+                imgH = pageW / certAspect;
             }
-            // Center within the A4 page
-            const x = (pageW - imgW) / 2;
-            const y = (pageH - imgH) / 2;
+            // Center horizontally — excess crops equally from left and right
+            const x = (pageW - imgW) / 2;     // negative value → left crop
+            const y = (pageH - imgH) / 2;     // 0 when height-fitted
 
             // Lossless Slow Deflate compression for maximum vector/raster clarity
             pdf.addImage(imgData, 'PNG', x, y, imgW, imgH, undefined, 'SLOW');
@@ -1208,18 +1211,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     compress: true
                 });
 
-                // Proportionally fit the 16:9 certificate image within A4 (no stretch/crop)
+                // Scale to COVER the full A4 page — no white margins, no distortion.
+                // A4 landscape (1.414:1) is shorter than 16:9 (1.778:1), so scale by
+                // height to fill A4 completely; the extra width is centered and clipped
+                // by jsPDF at the page boundary.
                 const pageW = A4_LANDSCAPE.widthMm;   // 297
                 const pageH = A4_LANDSCAPE.heightMm;  // 210
                 const certAspect = CERTIFICATE_POSITIONS.canvas.aspectRatio; // 16/9
-                let imgW = pageW;
-                let imgH = pageW / certAspect;
-                if (imgH > pageH) {
-                    imgH = pageH;
-                    imgW = pageH * certAspect;
+                let imgH = pageH;                  // fill full A4 height
+                let imgW = pageH * certAspect;     // 210 × (16/9) ≈ 373.3mm
+                if (imgW < pageW) {                // safety: if somehow not wide enough
+                    imgW = pageW;
+                    imgH = pageW / certAspect;
                 }
-                const imgX = (pageW - imgW) / 2;
-                const imgY = (pageH - imgH) / 2;
+                // Center horizontally — excess crops equally from left and right
+                const imgX = (pageW - imgW) / 2;  // negative value → left crop
+                const imgY = (pageH - imgH) / 2;  // 0 when height-fitted
 
                 // Lossless Slow Deflate compression for maximum vector/raster clarity
                 pdf.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH, undefined, 'SLOW');
