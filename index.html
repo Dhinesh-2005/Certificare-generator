@@ -154,7 +154,7 @@
                                     <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
                                         <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
                                     </svg>
-                                    <input type="text" id="duration" name="duration" class="form-input" placeholder="e.g. 01 June 2026 - 30 June 2026" autocomplete="off" required>
+                                    <input type="text" id="duration" name="duration" class="form-input" placeholder="e.g. 01 June 2026 - 15 June 2026" autocomplete="off" required>
                                 </div>
                                 <span class="input-hint">Start date to end date range.</span>
                             </div>
@@ -247,24 +247,38 @@
                         <div class="certificate-scaler" id="certificateScaler">
                             <!-- MASTER CERTIFICATE ELEMENT (Used for both Single & Bulk Rendering) -->
                             <div class="certificate" id="certificate">
-                                <!-- Dynamic Field 1: Intern Name -->
-                                <div class="dynamic-field cert-name" id="certInternName" aria-label="Intern Name">
-                                    DHINESH P
+                                <!-- Salutation Line -->
+                                <div class="cert-certify" id="certCertify">
+                                    This is to certify that Mr./Ms.
                                 </div>
 
-                                <!-- Dynamic Field 2: Domain / Program -->
-                                <div class="dynamic-field cert-domain" id="certDomain" aria-label="Domain or Program">
-                                    Full Stack Web Development
+                                <!-- Dynamic Field 1: Intern Name with decorative pink line -->
+                                <div class="cert-name-wrapper">
+                                    <div class="dynamic-field cert-name" id="certInternName" aria-label="Intern Name">
+                                        [ INTERN NAME ]
+                                    </div>
+                                    <div class="cert-name-line" aria-hidden="true"></div>
                                 </div>
 
-                                <!-- Dynamic Field 3: Duration -->
-                                <div class="dynamic-field cert-duration" id="certDuration" aria-label="Internship Duration">
-                                    01 June 2026 - 30 June 2026
+                                <!-- Certificate Body Paragraph -->
+                                <div class="cert-body" id="certBody">
+                                    <p class="cert-body-line cert-body-line-1">
+                                        Student of <strong>St Peter’s College Of Engineering and Technology</strong> has completed
+                                    </p>
+                                    <p class="cert-body-line cert-body-line-2">
+                                        Summer Internship Program as a <strong class="dynamic-field cert-domain" id="certDomain">[ DOMAIN / PROGRAM ]</strong> at <strong>TEAMACY</strong>
+                                    </p>
+                                    <p class="cert-body-line cert-body-line-3">
+                                        for the period from <span class="dynamic-field cert-duration" id="certDuration">[ START DATE ] - [ END DATE ]</span><span id="certDurationSuffix">. Duration 15 Days</span>
+                                    </p>
                                 </div>
 
-                                <!-- Dynamic Field 4: Certificate Number -->
-                                <div class="dynamic-field cert-number" id="certNumber" aria-label="Certificate Number">
-                                    TEAMACY-INT-2026-001
+                                <!-- Dynamic Field 4: Certificate Number Block (Centered above QR code) -->
+                                <div class="cert-number-block">
+                                    <div class="cert-number-label">CERTIFICATE NO.</div>
+                                    <div class="dynamic-field cert-number" id="certNumber" aria-label="Certificate Number">
+                                        [ CERTIFICATE NUMBER ]
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -428,10 +442,35 @@
         <!-- Dedicated Off-Screen Master Certificate Rendering Container (Used for html2canvas to guarantee 1600x900 rendering in all modes) -->
         <div id="masterRenderStage" style="position: fixed; left: -9999px; top: 0; width: 1600px; height: 900px; overflow: hidden; pointer-events: none; z-index: -9999;" aria-hidden="true">
             <div class="certificate" id="renderCertificate" style="width: 1600px; height: 900px;">
-                <div class="dynamic-field cert-name" id="renderInternName" aria-label="Intern Name"></div>
-                <div class="dynamic-field cert-domain" id="renderDomain" aria-label="Domain or Program"></div>
-                <div class="dynamic-field cert-duration" id="renderDuration" aria-label="Internship Duration"></div>
-                <div class="dynamic-field cert-number" id="renderNumber" aria-label="Certificate Number"></div>
+                <!-- Salutation Line -->
+                <div class="cert-certify">
+                    This is to certify that Mr./Ms.
+                </div>
+
+                <!-- Dynamic Field 1: Intern Name with decorative pink line -->
+                <div class="cert-name-wrapper">
+                    <div class="dynamic-field cert-name" id="renderInternName" aria-label="Intern Name"></div>
+                    <div class="cert-name-line" aria-hidden="true"></div>
+                </div>
+
+                <!-- Certificate Body Paragraph -->
+                <div class="cert-body">
+                    <p class="cert-body-line cert-body-line-1">
+                        Student of <strong>St Peter’s College Of Engineering and Technology</strong> has completed
+                    </p>
+                    <p class="cert-body-line cert-body-line-2">
+                        Summer Internship Program as a <strong class="dynamic-field cert-domain" id="renderDomain"></strong> at <strong>TEAMACY</strong>
+                    </p>
+                    <p class="cert-body-line cert-body-line-3">
+                        for the period from <span class="dynamic-field cert-duration" id="renderDuration"></span><span id="renderDurationSuffix">. Duration 15 Days</span>
+                    </p>
+                </div>
+
+                <!-- Dynamic Field 4: Certificate Number Block (Centered above QR code) -->
+                <div class="cert-number-block">
+                    <div class="cert-number-label">CERTIFICATE NO.</div>
+                    <div class="dynamic-field cert-number" id="renderNumber" aria-label="Certificate Number"></div>
+                </div>
             </div>
         </div>
 

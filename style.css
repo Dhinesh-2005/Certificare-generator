@@ -35,29 +35,28 @@
     --cert-width: 1600px;
     --cert-height: 900px;
 
-    /* NAME_POSITION: Centered horizontally, positioned above college text */
+    /* SALUTATION_POSITION: Centered horizontally */
+    --certify-top: 284px;
+    --certify-font-size: 29px;
+    --certify-color: #00004a;
+
+    /* NAME_POSITION: Centered horizontally, positioned above decorative line */
     --name-left: 50%;
-    --name-top: 324px;
+    --name-top: 330px;
     --name-font-size: 47px;
     --name-color: #00004a;
 
-    /* DOMAIN_POSITION: Centered horizontally, visually belongs to paragraph */
-    --domain-left: 50%;
-    --domain-top: 480px;
-    --domain-font-size: 33px;
-    --domain-color: #00004a;
+    /* BODY_POSITION: 3-line paragraph */
+    --body-top: 416px;
+    --body-font-size: 26.5px;
+    --body-color: #00004a;
+    --body-line-height: 1.68;
 
-    /* DURATION_POSITION: Aligned under DURATION heading */
-    --duration-left: 426px;
-    --duration-top: 668px;
-    --duration-font-size: 23px;
-    --duration-color: #000000;
-
-    /* CERTIFICATE_NUMBER_POSITION: Aligned under CERTIFICATE NO. heading */
-    --cert-number-left: 1130px;
-    --cert-number-top: 664px;
+    /* CERTIFICATE_NUMBER_POSITION: Centered directly above QR code */
+    --cert-number-block-top: 602px;
+    --cert-number-label-color: #881337;
+    --cert-number-color: #00004a;
     --cert-number-font-size: 23px;
-    --cert-number-color: #000000;
 
     /* Teamacy Brand Theme Tokens */
     --color-primary-navy: #00004a;
@@ -761,81 +760,137 @@ body {
 
 /* Universal dynamic field styling */
 .dynamic-field {
-    position: absolute;
     font-family: 'CertificateTimes', 'Times New Roman', Times, 'Liberation Serif', serif;
-    white-space: nowrap;
     pointer-events: none;
-    line-height: 1.15;
     box-sizing: border-box;
-    text-decoration: none; /* Never add unintended underlines */
+    text-decoration: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
 }
 
-/* --------------------------------------------------------------------------
-   DYNAMIC FIELD 1 — INTERN NAME
-   Centered horizontally at 50%, top at 324px
-   -------------------------------------------------------------------------- */
-.cert-name {
-    left: var(--name-left);
+/* Salutation: This is to certify that Mr./Ms. */
+.cert-certify {
+    position: absolute;
+    left: 50%;
+    top: var(--certify-top);
+    transform: translateX(-50%);
+    font-family: 'CertificateTimes', 'Times New Roman', Times, serif;
+    font-size: var(--certify-font-size);
+    font-weight: 400;
+    color: var(--certify-color);
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Intern Name and Decorative Underline Wrapper */
+.cert-name-wrapper {
+    position: absolute;
+    left: 50%;
     top: var(--name-top);
     transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 1200px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.cert-name {
     color: var(--name-color);
     font-size: var(--name-font-size);
-    font-weight: 400;
+    font-weight: 700;
     text-align: center;
     max-width: 1050px;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+    line-height: 1.15;
 }
 
-/* --------------------------------------------------------------------------
-   DYNAMIC FIELD 2 — DOMAIN / PROGRAM
-   Centered horizontally at 50%, top at 480px
-   Visually belongs to the surrounding certificate sentence
-   -------------------------------------------------------------------------- */
+.cert-name-line {
+    width: 395px;
+    height: 2px;
+    margin-top: 8px;
+    background: linear-gradient(90deg, transparent 0%, rgba(225, 29, 72, 0.25) 15%, #e11d48 50%, rgba(225, 29, 72, 0.25) 85%, transparent 100%);
+    border-radius: 2px;
+}
+
+/* Certificate Body Paragraph (3 lines) */
+.cert-body {
+    position: absolute;
+    left: 50%;
+    top: var(--body-top);
+    transform: translateX(-50%);
+    width: 1200px;
+    text-align: center;
+    font-family: 'CertificateTimes', 'Times New Roman', Times, serif;
+    font-size: var(--body-font-size);
+    line-height: var(--body-line-height);
+    color: var(--body-color);
+    pointer-events: none;
+    user-select: none;
+}
+
+.cert-body-line {
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    letter-spacing: 0.15px;
+}
+
+.cert-body-line strong {
+    font-weight: 700;
+}
+
 .cert-domain {
-    left: var(--domain-left);
-    top: var(--domain-top);
-    transform: translateX(-50%);
-    color: var(--domain-color);
-    font-size: var(--domain-font-size);
-    font-weight: 400;
-    text-align: center;
-    max-width: 1050px;
-    letter-spacing: 0.1px;
+    font-weight: 700;
+    color: #00004a;
 }
 
-/* --------------------------------------------------------------------------
-   DYNAMIC FIELD 3 — DURATION
-   Centered directly below DURATION heading
-   -------------------------------------------------------------------------- */
 .cert-duration {
-    left: var(--duration-left);
-    top: var(--duration-top);
-    transform: translateX(-50%);
-    color: var(--duration-color);
-    font-size: var(--duration-font-size);
     font-weight: 400;
-    text-align: center;
-    max-width: 500px;
-    letter-spacing: 0.1px;
+    color: #00004a;
 }
 
-/* --------------------------------------------------------------------------
-   DYNAMIC FIELD 4 — CERTIFICATE NUMBER
-   Centered directly below CERTIFICATE NO. heading
-   -------------------------------------------------------------------------- */
-.cert-number {
-    left: var(--cert-number-left);
-    top: var(--cert-number-top);
+/* Certificate Number Block (Centered directly above QR code) */
+.cert-number-block {
+    position: absolute;
+    left: 50%;
+    top: var(--cert-number-block-top);
     transform: translateX(-50%);
-    color: var(--cert-number-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+}
+
+.cert-number-label {
+    font-family: 'CertificateTimes', 'Times New Roman', Times, serif;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--cert-number-label-color);
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+    line-height: 1.15;
+}
+
+.cert-number {
+    font-family: 'CertificateTimes', 'Times New Roman', Times, serif;
     font-size: var(--cert-number-font-size);
     font-weight: 400;
-    text-align: center;
-    max-width: 500px;
-    letter-spacing: 0.1px;
+    color: var(--cert-number-color);
+    margin-top: 4px;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    line-height: 1.15;
 }
 
 /* --------------------------------------------------------------------------

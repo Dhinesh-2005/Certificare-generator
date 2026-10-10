@@ -12,7 +12,7 @@ Designed and engineered with strict template locking to match the official Teama
 - **Strict 4-Field Dynamic Input**:
   1. **Intern Name** (e.g. `DHINESH P`)
   2. **Domain / Program** (e.g. `Full Stack Web Development`)
-  3. **Duration** (e.g. `01 June 2026 - 30 June 2026`)
+  3. **Duration** (e.g. `01 June 2026 - 15 June 2026`)
   4. **Certificate Number** (e.g. `TEAMACY-INT-2026-001`)
 - **Auto-Scaling Typography**: Intelligent font auto-scaling for long student names and domain titles, preventing overflow while maintaining perfect horizontal centering.
 - **High-Resolution 16:9 PDF Export**: Produces crisp, publication-ready vector/raster PDFs at `1600 × 900` aspect ratio with zero page margins, zero distortion, and zero cropping.

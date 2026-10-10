@@ -35,40 +35,35 @@ const CERTIFICATE_POSITIONS = {
         height: 900,
         aspectRatio: 16 / 9
     },
+    certify: {
+        y: '284px',
+        fontSize: 29,
+        color: '#00004a'
+    },
     name: {
         x: '50%',              // Centered horizontally
-        y: '324px',            // Vertical baseline above college text & pink ribbon
+        y: '330px',            // Vertical baseline above decorative pink line
         maxWidth: 1000,        // Max width before auto-scaling
         baseFontSize: 47,      // 47px at 1600x900
-        minFontSize: 28,
+        minFontSize: 26,
+        color: '#00004a',
+        fontWeight: 'bold'
+    },
+    body: {
+        y: '416px',
+        fontSize: 26.5,
+        color: '#00004a'
+    },
+    domain: {
+        color: '#00004a',
+        fontWeight: 'bold'
+    },
+    duration: {
         color: '#00004a',
         fontWeight: 'normal'
     },
-    domain: {
-        x: '50%',              // Centered horizontally
-        y: '480px',            // Between "for successfully completing..." and "at Teamacy."
-        maxWidth: 1000,        // Max width before auto-scaling
-        baseFontSize: 33,      // 33px at 1600x900
-        minFontSize: 20,
-        color: '#00004a',      // Same color as surrounding certificate sentence
-        fontWeight: 'normal'
-    },
-    duration: {
-        x: '426px',            // Centered with DURATION heading section
-        y: '668px',            // Directly below DURATION label
-        maxWidth: 450,         // Max width before auto-scaling
-        baseFontSize: 23,      // 23px at 1600x900
-        minFontSize: 16,
-        color: '#00004a',      // Same color as domain/name
-        fontWeight: 'normal'
-    },
     certificateNumber: {
-        x: '1130px',           // Centered with CERTIFICATE NO. heading section
-        y: '664px',            // Directly below CERTIFICATE NO. label
-        maxWidth: 450,         // Max width before auto-scaling
-        baseFontSize: 23,      // 23px at 1600x900
-        minFontSize: 16,
-        color: '#00004a',      // Same color as domain/name
+        color: '#00004a',
         fontWeight: 'normal'
     }
 };
@@ -98,6 +93,33 @@ function formatStudentFilename(rawName, existingFilenames = new Set()) {
     }
     existingFilenames.add(filename);
     return filename;
+}
+
+/**
+ * Intelligent Duration and Period Parser
+ * Handles date ranges and appends/preserves '. Duration 15 Days' or custom durations
+ */
+function parseDuration(rawDuration) {
+    if (!rawDuration) {
+        return {
+            period: '[ START DATE ] - [ END DATE ]',
+            suffix: '. Duration 15 Days'
+        };
+    }
+    const trimmed = rawDuration.trim();
+    // Check if rawDuration already has ". Duration ..." or "Duration ..."
+    const durMatch = trimmed.match(/^(.*?)(?:[.,;]?\s*(Duration\s+.*))$/i);
+    if (durMatch && durMatch[1].trim() && durMatch[2].trim()) {
+        return {
+            period: durMatch[1].trim(),
+            suffix: `. ${durMatch[2].trim()}`
+        };
+    }
+    // If it's just the date range e.g. "01 June 2026 - 15 June 2026"
+    return {
+        period: trimmed,
+        suffix: '. Duration 15 Days'
+    };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -141,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const certInternName = document.getElementById('certInternName');
     const certDomain = document.getElementById('certDomain');
     const certDuration = document.getElementById('certDuration');
+    const certDurationSuffix = document.getElementById('certDurationSuffix');
     const certNumber = document.getElementById('certNumber');
 
     // Dedicated Off-Screen Master Certificate Rendering Stage Elements
@@ -148,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderInternName = document.getElementById('renderInternName');
     const renderDomain = document.getElementById('renderDomain');
     const renderDuration = document.getElementById('renderDuration');
+    const renderDurationSuffix = document.getElementById('renderDurationSuffix');
     const renderNumber = document.getElementById('renderNumber');
 
     // Apply zero-taint Base64 background if available (guarantees file:/// compatibility)
@@ -237,33 +261,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Apply configuration positions and styles to master certificate DOM
     // ------------------------------------------------------------------------
     function applyLockedPositions() {
-        // Name
-        certInternName.style.left = CERTIFICATE_POSITIONS.name.x;
-        certInternName.style.top = CERTIFICATE_POSITIONS.name.y;
-        certInternName.style.transform = 'translateX(-50%)';
-        certInternName.style.color = CERTIFICATE_POSITIONS.name.color;
-        certInternName.style.fontWeight = CERTIFICATE_POSITIONS.name.fontWeight;
-
-        // Domain
-        certDomain.style.left = CERTIFICATE_POSITIONS.domain.x;
-        certDomain.style.top = CERTIFICATE_POSITIONS.domain.y;
-        certDomain.style.transform = 'translateX(-50%)';
-        certDomain.style.color = CERTIFICATE_POSITIONS.domain.color;
-        certDomain.style.fontWeight = CERTIFICATE_POSITIONS.domain.fontWeight;
-
-        // Duration
-        certDuration.style.left = CERTIFICATE_POSITIONS.duration.x;
-        certDuration.style.top = CERTIFICATE_POSITIONS.duration.y;
-        certDuration.style.transform = 'translateX(-50%)';
-        certDuration.style.color = CERTIFICATE_POSITIONS.duration.color;
-        certDuration.style.fontWeight = CERTIFICATE_POSITIONS.duration.fontWeight;
-
-        // Certificate Number
-        certNumber.style.left = CERTIFICATE_POSITIONS.certificateNumber.x;
-        certNumber.style.top = CERTIFICATE_POSITIONS.certificateNumber.y;
-        certNumber.style.transform = 'translateX(-50%)';
-        certNumber.style.color = CERTIFICATE_POSITIONS.certificateNumber.color;
-        certNumber.style.fontWeight = CERTIFICATE_POSITIONS.certificateNumber.fontWeight;
+        if (certInternName) {
+            certInternName.style.color = CERTIFICATE_POSITIONS.name.color;
+            certInternName.style.fontWeight = CERTIFICATE_POSITIONS.name.fontWeight;
+        }
+        if (certDomain) {
+            certDomain.style.color = CERTIFICATE_POSITIONS.domain.color;
+            certDomain.style.fontWeight = CERTIFICATE_POSITIONS.domain.fontWeight;
+        }
+        if (certDuration) {
+            certDuration.style.color = CERTIFICATE_POSITIONS.duration.color;
+            certDuration.style.fontWeight = CERTIFICATE_POSITIONS.duration.fontWeight;
+        }
+        if (certNumber) {
+            certNumber.style.color = CERTIFICATE_POSITIONS.certificateNumber.color;
+            certNumber.style.fontWeight = CERTIFICATE_POSITIONS.certificateNumber.fontWeight;
+        }
     }
     applyLockedPositions();
 
@@ -359,60 +372,104 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         ctx.drawImage(bgImg, 0, 0, width, height);
 
-        function drawFittedText({ text, x, y, maxWidth, baseSize, minSize, color, align = 'center' }) {
+        // 1. Salutation Line
+        ctx.fillStyle = '#00004a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = '29px "CertificateTimes", "Times New Roman", Times, serif';
+        ctx.fillText('This is to certify that Mr./Ms.', 800, 308);
+
+        // 2. Dynamic Intern Name
+        function drawFittedText({ text, x, y, maxWidth, baseSize, minSize, color, weight = 'normal', align = 'center' }) {
             ctx.fillStyle = color;
             ctx.textAlign = align;
             ctx.textBaseline = 'alphabetic';
 
             let size = baseSize;
             while (size > minSize) {
-                ctx.font = `${size}px "CertificateTimes", "Times New Roman", Times, serif`;
+                ctx.font = `${weight} ${size}px "CertificateTimes", "Times New Roman", Times, serif`;
                 if (ctx.measureText(text).width <= maxWidth) break;
                 size--;
             }
-            ctx.font = `${size}px "CertificateTimes", "Times New Roman", Times, serif`;
+            ctx.font = `${weight} ${size}px "CertificateTimes", "Times New Roman", Times, serif`;
             ctx.fillText(text, x, y);
         }
 
         drawFittedText({
-            text: data.name || '',
+            text: data.name || '[ INTERN NAME ]',
             x: 800,
-            y: 362,
-            maxWidth: CERTIFICATE_POSITIONS.name.maxWidth,
-            baseSize: CERTIFICATE_POSITIONS.name.baseFontSize,
-            minSize: CERTIFICATE_POSITIONS.name.minFontSize,
-            color: CERTIFICATE_POSITIONS.name.color
+            y: 366,
+            maxWidth: 1000,
+            baseSize: 47,
+            minSize: 26,
+            color: '#00004a',
+            weight: 'bold'
         });
 
-        drawFittedText({
-            text: data.domain || '',
-            x: 800,
-            y: 508,
-            maxWidth: CERTIFICATE_POSITIONS.domain.maxWidth,
-            baseSize: CERTIFICATE_POSITIONS.domain.baseFontSize,
-            minSize: CERTIFICATE_POSITIONS.domain.minFontSize,
-            color: CERTIFICATE_POSITIONS.domain.color
-        });
+        // 3. Decorative Tapered Pink Line under name
+        const lineGrad = ctx.createLinearGradient(602, 382, 998, 382);
+        lineGrad.addColorStop(0, 'rgba(225, 29, 72, 0)');
+        lineGrad.addColorStop(0.15, 'rgba(225, 29, 72, 0.25)');
+        lineGrad.addColorStop(0.5, '#e11d48');
+        lineGrad.addColorStop(0.85, 'rgba(225, 29, 72, 0.25)');
+        lineGrad.addColorStop(1, 'rgba(225, 29, 72, 0)');
+        ctx.fillStyle = lineGrad;
+        ctx.fillRect(602, 382, 396, 2);
 
-        drawFittedText({
-            text: data.duration || '',
-            x: 426,
-            y: 686,
-            maxWidth: CERTIFICATE_POSITIONS.duration.maxWidth,
-            baseSize: CERTIFICATE_POSITIONS.duration.baseFontSize,
-            minSize: CERTIFICATE_POSITIONS.duration.minFontSize,
-            color: CERTIFICATE_POSITIONS.duration.color
-        });
+        // Helper to draw centered mixed-style text lines
+        function drawMixedLine(segments, y, fontSize = 26.5) {
+            ctx.textBaseline = 'alphabetic';
+            let totalWidth = 0;
+            segments.forEach(seg => {
+                ctx.font = `${seg.bold ? 'bold' : 'normal'} ${fontSize}px "CertificateTimes", "Times New Roman", Times, serif`;
+                totalWidth += ctx.measureText(seg.text).width;
+            });
 
-        drawFittedText({
-            text: data.certNo || data.certificateNumber || '',
-            x: 1130,
-            y: 682,
-            maxWidth: CERTIFICATE_POSITIONS.certificateNumber.maxWidth,
-            baseSize: CERTIFICATE_POSITIONS.certificateNumber.baseFontSize,
-            minSize: CERTIFICATE_POSITIONS.certificateNumber.minFontSize,
-            color: CERTIFICATE_POSITIONS.certificateNumber.color
-        });
+            let currentX = 800 - (totalWidth / 2);
+            ctx.textAlign = 'left';
+            segments.forEach(seg => {
+                ctx.font = `${seg.bold ? 'bold' : 'normal'} ${fontSize}px "CertificateTimes", "Times New Roman", Times, serif`;
+                ctx.fillStyle = seg.color || '#00004a';
+                ctx.fillText(seg.text, currentX, y);
+                currentX += ctx.measureText(seg.text).width;
+            });
+        }
+
+        const durInfo = parseDuration(data.duration);
+        const domainText = data.domain || '[ DOMAIN / PROGRAM ]';
+
+        // 4. Body Paragraph Line 1
+        drawMixedLine([
+            { text: 'Student of ', bold: false },
+            { text: 'St Peter’s College Of Engineering and Technology', bold: true },
+            { text: ' has completed', bold: false }
+        ], 434, 26.5);
+
+        // 5. Body Paragraph Line 2
+        drawMixedLine([
+            { text: 'Summer Internship Program as a ', bold: false },
+            { text: domainText, bold: true },
+            { text: ' at ', bold: false },
+            { text: 'TEAMACY', bold: true }
+        ], 478, 26.5);
+
+        // 6. Body Paragraph Line 3
+        drawMixedLine([
+            { text: 'for the period from ', bold: false },
+            { text: durInfo.period, bold: false },
+            { text: durInfo.suffix, bold: false }
+        ], 522, 26.5);
+
+        // 7. Certificate Number Block (Centered above QR code)
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = 'bold 21px "CertificateTimes", "Times New Roman", Times, serif';
+        ctx.fillStyle = '#881337';
+        ctx.fillText('CERTIFICATE NO.', 800, 620);
+
+        ctx.font = '23px "CertificateTimes", "Times New Roman", Times, serif';
+        ctx.fillStyle = '#00004a';
+        ctx.fillText(data.certNo || data.certificateNumber || '[ CERTIFICATE NUMBER ]', 800, 647);
 
         return canvas;
     }
@@ -428,34 +485,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (renderCertificate && typeof window.html2canvas === 'function') {
-                renderInternName.textContent = data.name || '';
-                renderDomain.textContent = data.domain || '';
-                renderDuration.textContent = data.duration || '';
-                renderNumber.textContent = data.certNo || data.certificateNumber || '';
+                const durInfo = parseDuration(data.duration);
+                renderInternName.textContent = data.name || '[ INTERN NAME ]';
+                renderDomain.textContent = data.domain || '[ DOMAIN / PROGRAM ]';
+                renderDuration.textContent = durInfo.period;
+                if (renderDurationSuffix) renderDurationSuffix.textContent = durInfo.suffix;
+                renderNumber.textContent = data.certNo || data.certificateNumber || '[ CERTIFICATE NUMBER ]';
 
                 fitTextElement(
                     renderInternName,
                     CERTIFICATE_POSITIONS.name.baseFontSize,
                     CERTIFICATE_POSITIONS.name.minFontSize,
                     CERTIFICATE_POSITIONS.name.maxWidth
-                );
-                fitTextElement(
-                    renderDomain,
-                    CERTIFICATE_POSITIONS.domain.baseFontSize,
-                    CERTIFICATE_POSITIONS.domain.minFontSize,
-                    CERTIFICATE_POSITIONS.domain.maxWidth
-                );
-                fitTextElement(
-                    renderDuration,
-                    CERTIFICATE_POSITIONS.duration.baseFontSize,
-                    CERTIFICATE_POSITIONS.duration.minFontSize,
-                    CERTIFICATE_POSITIONS.duration.maxWidth
-                );
-                fitTextElement(
-                    renderNumber,
-                    CERTIFICATE_POSITIONS.certificateNumber.baseFontSize,
-                    CERTIFICATE_POSITIONS.certificateNumber.minFontSize,
-                    CERTIFICATE_POSITIONS.certificateNumber.maxWidth
                 );
 
                 // Small tick to ensure reflow
@@ -591,9 +632,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCertificateScale();
 
         // Apply dynamic field values
+        const durInfo = parseDuration(duration);
         certInternName.textContent = name;
         certDomain.textContent = domain;
-        certDuration.textContent = duration;
+        certDuration.textContent = durInfo.period;
+        if (certDurationSuffix) certDurationSuffix.textContent = durInfo.suffix;
         certNumber.textContent = certNo;
 
         // Auto-scale fonts according to CERTIFICATE_POSITIONS configuration
@@ -602,24 +645,6 @@ document.addEventListener('DOMContentLoaded', () => {
             CERTIFICATE_POSITIONS.name.baseFontSize,
             CERTIFICATE_POSITIONS.name.minFontSize,
             CERTIFICATE_POSITIONS.name.maxWidth
-        );
-        fitTextElement(
-            certDomain,
-            CERTIFICATE_POSITIONS.domain.baseFontSize,
-            CERTIFICATE_POSITIONS.domain.minFontSize,
-            CERTIFICATE_POSITIONS.domain.maxWidth
-        );
-        fitTextElement(
-            certDuration,
-            CERTIFICATE_POSITIONS.duration.baseFontSize,
-            CERTIFICATE_POSITIONS.duration.minFontSize,
-            CERTIFICATE_POSITIONS.duration.maxWidth
-        );
-        fitTextElement(
-            certNumber,
-            CERTIFICATE_POSITIONS.certificateNumber.baseFontSize,
-            CERTIFICATE_POSITIONS.certificateNumber.minFontSize,
-            CERTIFICATE_POSITIONS.certificateNumber.maxWidth
         );
 
         // Enable download button
@@ -744,10 +769,13 @@ document.addEventListener('DOMContentLoaded', () => {
         form.reset();
         clearAlert();
 
-        certInternName.textContent = '';
-        certDomain.textContent = '';
-        certDuration.textContent = '';
-        certNumber.textContent = '';
+        certInternName.textContent = '[ INTERN NAME ]';
+        certDomain.textContent = '[ DOMAIN / PROGRAM ]';
+        certDuration.textContent = '[ START DATE ] - [ END DATE ]';
+        if (certDurationSuffix) {
+            certDurationSuffix.textContent = '. Duration 15 Days';
+        }
+        certNumber.textContent = '[ CERTIFICATE NUMBER ]';
 
         stageWrapper.style.display = 'none';
         emptyPreviewPlaceholder.style.display = 'flex';
@@ -780,7 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearAlert();
         inputInternName.value = 'DHINESH P';
         inputDomainProgram.value = 'Full Stack Web Development';
-        inputDuration.value = '01 June 2026 - 30 June 2026';
+        inputDuration.value = '01 June 2026 - 15 June 2026';
         inputCertNumber.value = 'TEAMACY-INT-2026-001';
 
         generateCertificate();
@@ -801,9 +829,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const templateData = [
             ['Name', 'Domain', 'Duration', 'Certificate Number'],
-            ['DHINESH P', 'Full Stack Web Development', '01 June 2026 - 30 June 2026', 'TEAMACY-INT-2026-001'],
-            ['ARUN KUMAR', 'Python Development', '01 June 2026 - 30 June 2026', 'TEAMACY-INT-2026-002'],
-            ['PRIYA S', 'UI/UX Design', '01 June 2026 - 30 June 2026', 'TEAMACY-INT-2026-003']
+            ['DHINESH P', 'Full Stack Web Development', '01 June 2026 - 15 June 2026', 'TEAMACY-INT-2026-001'],
+            ['ARUN KUMAR', 'Python Development', '01 June 2026 - 15 June 2026', 'TEAMACY-INT-2026-002'],
+            ['PRIYA S', 'UI/UX Design', '01 June 2026 - 15 June 2026', 'TEAMACY-INT-2026-003']
         ];
 
         const worksheet = XLSX.utils.aoa_to_sheet(templateData);
